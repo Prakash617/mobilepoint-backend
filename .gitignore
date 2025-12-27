@@ -1,77 +1,99 @@
-# Django stuff:
+# ======================
+# General
+# ======================
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+*.pid
+*.seed
+*.pid.lock
+.DS_Store
+Thumbs.db
+**/migrations/*.py
+**/migrations/__pycache__/
 
-# If you want to avoid version control interfernce with npm:
-node_modules/
-
-# Ignore virtualenv directories:
-.venv
-venv
-ENV
-
-# Ignore pip packages:
-/.cache
-/dist
-/build
-*.egg-info
-*.whl
-*.wheel
-*.zip
-*.tar.gz
-*.tar.bz2
-*.rar
-*.exe
-
-# Ignore OS generated files
+# ======================
+# Python / Django
+# ======================
 __pycache__/
-.DS_Store
-.AppleDesktopServiceStub
-.AppleDerivedData
-.DocumentRevisions-V100
-/com.apple.TimeMachine/
-/com.apple.TimeMachine.Local/
-.Spotlight-V100
-.Trashes
-.VolumeIcon.icns
-.iCloud
-.hgignore
-.hgignore_global
-.hgignore_local
-.hgignore_other
-.ipch
-.o
-.swo
-.swp
-.dS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-.VolumeIcon.icns
-.iCloud
-.hgignore
-.hgignore_global
-.hgignore_local
-.hgignore_other
-.ipch
-.o
-.swo
-.swp
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-.VolumeIcon.icns
-.iCloud
-.hgignore
-.hgignore_global
-.hgignore_local
-.hgignore_other
-.ipch
-.o
-.swo
-.swp
+*.py[cod]
+*.sqlite3
+*.db
+*.db-journal
+*.egg-info/
+.eggs/
+.env
+.env.*
+venv/
+.venv/
+env/
+ENV/
+
+# Django
+staticfiles/
+media/
+local_settings.py
+
+# Migrations (optional – keep if you want)
+# **/migrations/*.py
+# **/migrations/__pycache__/
+
+# ======================
+# Django Cache
+# ======================
+.cache/
+*.mo
+*.pot
+
+# ======================
+# Node / Next.js
+# ======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+.next/
+out/
+dist/
+build/
+
+# ======================
+# Next.js Environment
+# ======================
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# ======================
+# IDEs / Editors
+# ======================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ======================
+# OS / Temp
+# ======================
+*.swp
+*.swo
+*~
+
+# ======================
+# Testing
+# ======================
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ======================
+# Docker (optional)
+# ======================
+docker-compose.override.yml
+
+# ======================
+# Logs
+# ======================
+logs/

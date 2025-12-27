@@ -72,10 +72,12 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    'http://api.gowell.edu.np/',
+    'https://api.gowell.edu.np/',
     'https://mobilepoint-seven.vercel.app/',
     
 ]
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
 
 
 MIDDLEWARE = [

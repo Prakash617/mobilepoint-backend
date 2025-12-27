@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10 max-w-xl">
+    <h1 class="text-3xl font-bold mb-6">Edit Your Profile</h1>
+
+    <form method="POST" enctype="multipart/form-data" class="bg-white shadow rounded-lg p-6">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 transition mt-4">Save Changes</button>
+        <a href="{% url 'profile_dashboard' %}" class="ml-4 text-gray-600 hover:underline">Cancel</a>
+    </form>
+</div>
+{% endblock %}

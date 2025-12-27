@@ -1,0 +1,56 @@
+"""
+URL configuration for mobilepoint project.
+
+The `urlpatterns` list routes URLs to views. For more information please see:
+    https://docs.djangoproject.com/en/6.0/topics/http/urls/
+Examples:
+Function views
+    1. Add an import:  from my_app import views
+    2. Add a URL to urlpatterns:  path('', views.home, name='home')
+Class-based views
+    1. Add an import:  from other_app.views import Home
+    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
+Including another URLconf
+    1. Import the include() function: from django.urls import include, path
+    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+"""
+from django.contrib import admin
+from django.urls import path,include
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+    
+)
+from django.conf import settings
+from django.conf.urls.static import static
+
+from rest_framework.routers import DefaultRouter
+from product.api_views import ProductViewSet
+router = DefaultRouter()
+
+urlpatterns = [
+    path('admin/', admin.site.urls),
+    path('admin/', include('filehub.urls')),path('admin/', include('filehub.urls')),
+    path('product/', include('product.api_urls')),
+    # Direct route for frontend-friendly related products URL
+    path('products/<slug:slug>/related/', ProductViewSet.as_view({'get': 'related'}), name='product-related'),
+    path('orders/', include('orders.api_urls')),
+    path('wishlist/', include('wishlist.api_urls')),
+    path('website/', include('website.api_urls')),
+    
+     # ------------------jwt------------
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/', include(router.urls)),
+    path('tinymce/', include('tinymce.urls')),
+    # Optional: Django REST Framework browsable API authentication
+    path('api-auth/', include('rest_framework.urls')),
+    path('tinymce/', include('tinymce.urls')),
+]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

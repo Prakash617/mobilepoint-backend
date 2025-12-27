@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-10 max-w-3xl">
+    <h1 class="text-3xl font-bold mb-6">Your Profile Dashboard</h1>
+
+    <div class="bg-white shadow rounded-lg p-6">
+        <div class="flex items-center space-x-6">
+            {% if profile.avatar %}
+            <img src="{{ profile.avatar.url }}" alt="Avatar" class="w-24 h-24 rounded-full object-cover" />
+            {% else %}
+            <div class="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center text-gray-600 text-xl">No Avatar</div>
+            {% endif %}
+
+            <div>
+                <h2 class="text-xl font-semibold">{{ request.user.get_full_name|default:request.user.username }}</h2>
+                <p class="text-gray-600 mt-2">{{ profile.bio|default:"No bio added yet." }}</p>
+                <a href="{% url 'edit_profile' %}" class="mt-4 inline-block bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 transition">Edit Profile</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

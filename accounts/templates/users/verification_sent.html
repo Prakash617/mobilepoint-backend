@@ -1,0 +1,66 @@
+<!-- templates/users/verification_sent.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Email Sent</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #3498db;
+            color: white;
+            padding: 10px 20px;
+            margin-top: 20px;
+            border-radius: 4px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Check Your Email</h1>
+        <p>We have sent a verification email to the address you provided during registration.</p>
+        <p>Please check your inbox and follow the instructions to activate your account.</p>
+        <p>If you did not receive the email, <a href="{% url 'register' %}">try registering again</a>.</p>
+        <a href="{% url 'home' %}" class="btn">Go to Home</a>
+    </div>
+</body>
+</html>

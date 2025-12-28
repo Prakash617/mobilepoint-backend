@@ -6,12 +6,16 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils import timezone
 from .models import (
-    Carousel, CarouselSlide, Advertisement, Banner,
-    Testimonial, FAQ, NewsletterSubscriber, ContactMessage, SiteSettings , CuratedItem
+    Carousel, CarouselSlide, Advertisement,
+    # Banner,
+    # Testimonial, FAQ, 
+    NewsletterSubscriber, ContactMessage, SiteSettings , CuratedItem
 )
 from .serializers import (
-    CarouselSerializer, AdvertisementSerializer, BannerSerializer,
-    TestimonialSerializer, FAQSerializer, NewsletterSubscriberSerializer,
+    CarouselSerializer, AdvertisementSerializer,
+    # BannerSerializer,
+    # TestimonialSerializer, FAQSerializer,
+    NewsletterSubscriberSerializer,
     ContactMessageSerializer, SiteSettingsSerializer ,CuratedItemSerializer
 )
 
@@ -99,95 +103,95 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
         return Response({'status': 'click tracked'})
 
 
-class BannerViewSet(viewsets.ModelViewSet):
-    queryset = Banner.objects.all()
-    serializer_class = BannerSerializer
-    filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['banner_type', 'position', 'is_active']
+# class BannerViewSet(viewsets.ModelViewSet):
+#     queryset = Banner.objects.all()
+#     serializer_class = BannerSerializer
+#     filter_backends = [DjangoFilterBackend]
+#     filterset_fields = ['banner_type', 'position', 'is_active']
     
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
+#     def get_permissions(self):
+#         if self.action in ['list', 'retrieve']:
+#             return [AllowAny()]
+#         return [IsAdminUser()]
     
-    def get_queryset(self):
-        if self.request.user.is_staff:
-            return self.queryset
+#     def get_queryset(self):
+#         if self.request.user.is_staff:
+#             return self.queryset
         
-        # Public users only see active, valid banners
-        return self.queryset.filter(is_active=True)
+#         # Public users only see active, valid banners
+#         return self.queryset.filter(is_active=True)
     
-    @action(detail=False, methods=['get'])
-    def active(self, request):
-        """Get all active banners"""
-        banners = [b for b in self.get_queryset() if b.is_valid()]
-        serializer = self.get_serializer(banners, many=True)
-        return Response(serializer.data)
+#     @action(detail=False, methods=['get'])
+#     def active(self, request):
+#         """Get all active banners"""
+#         banners = [b for b in self.get_queryset() if b.is_valid()]
+#         serializer = self.get_serializer(banners, many=True)
+#         return Response(serializer.data)
 
 
-class TestimonialViewSet(viewsets.ModelViewSet):
-    queryset = Testimonial.objects.filter(is_active=True)
-    serializer_class = TestimonialSerializer
-    filter_backends = [DjangoFilterBackend, OrderingFilter]
-    filterset_fields = ['is_featured', 'rating', 'product']
-    ordering_fields = ['created_at', 'rating', 'order']
-    ordering = ['order', '-created_at']
+# class TestimonialViewSet(viewsets.ModelViewSet):
+#     queryset = Testimonial.objects.filter(is_active=True)
+#     serializer_class = TestimonialSerializer
+#     filter_backends = [DjangoFilterBackend, OrderingFilter]
+#     filterset_fields = ['is_featured', 'rating', 'product']
+#     ordering_fields = ['created_at', 'rating', 'order']
+#     ordering = ['order', '-created_at']
     
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [AllowAny()]
-        return [IsAdminUser()]
+#     def get_permissions(self):
+#         if self.action in ['list', 'retrieve']:
+#             return [AllowAny()]
+#         return [IsAdminUser()]
     
-    @action(detail=False, methods=['get'])
-    def featured(self, request):
-        """Get featured testimonials"""
-        testimonials = self.get_queryset().filter(is_featured=True)
-        serializer = self.get_serializer(testimonials, many=True)
-        return Response(serializer.data)
+#     @action(detail=False, methods=['get'])
+#     def featured(self, request):
+#         """Get featured testimonials"""
+#         testimonials = self.get_queryset().filter(is_featured=True)
+#         serializer = self.get_serializer(testimonials, many=True)
+#         return Response(serializer.data)
 
 
-class FAQViewSet(viewsets.ModelViewSet):
-    queryset = FAQ.objects.filter(is_active=True)
-    serializer_class = FAQSerializer
-    filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ['category']
-    search_fields = ['question', 'answer']
+# class FAQViewSet(viewsets.ModelViewSet):
+#     queryset = FAQ.objects.filter(is_active=True)
+#     serializer_class = FAQSerializer
+#     filter_backends = [DjangoFilterBackend, SearchFilter]
+#     filterset_fields = ['category']
+#     search_fields = ['question', 'answer']
     
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'mark_helpful']:
-            return [AllowAny()]
-        return [IsAdminUser()]
+#     def get_permissions(self):
+#         if self.action in ['list', 'retrieve', 'mark_helpful']:
+#             return [AllowAny()]
+#         return [IsAdminUser()]
     
-    def retrieve(self, request, *args, **kwargs):
-        """Increment view count when FAQ is viewed"""
-        instance = self.get_object()
-        instance.view_count += 1
-        instance.save(update_fields=['view_count'])
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+#     def retrieve(self, request, *args, **kwargs):
+#         """Increment view count when FAQ is viewed"""
+#         instance = self.get_object()
+#         instance.view_count += 1
+#         instance.save(update_fields=['view_count'])
+#         serializer = self.get_serializer(instance)
+#         return Response(serializer.data)
     
-    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
-    def mark_helpful(self, request, pk=None):
-        """Mark FAQ as helpful"""
-        faq = self.get_object()
-        faq.helpful_count += 1
-        faq.save(update_fields=['helpful_count'])
-        return Response({'status': 'marked as helpful'})
+#     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
+#     def mark_helpful(self, request, pk=None):
+#         """Mark FAQ as helpful"""
+#         faq = self.get_object()
+#         faq.helpful_count += 1
+#         faq.save(update_fields=['helpful_count'])
+#         return Response({'status': 'marked as helpful'})
     
-    @action(detail=False, methods=['get'])
-    def by_category(self, request):
-        """Get FAQs grouped by category"""
-        categories = dict(FAQ.CATEGORY_CHOICES)
-        result = {}
+#     @action(detail=False, methods=['get'])
+#     def by_category(self, request):
+#         """Get FAQs grouped by category"""
+#         categories = dict(FAQ.CATEGORY_CHOICES)
+#         result = {}
         
-        for category_key, category_name in categories.items():
-            faqs = self.get_queryset().filter(category=category_key)
-            result[category_key] = {
-                'name': category_name,
-                'faqs': self.get_serializer(faqs, many=True).data
-            }
+#         for category_key, category_name in categories.items():
+#             faqs = self.get_queryset().filter(category=category_key)
+#             result[category_key] = {
+#                 'name': category_name,
+#                 'faqs': self.get_serializer(faqs, many=True).data
+#             }
         
-        return Response(result)
+#         return Response(result)
 
 
 class NewsletterSubscriberViewSet(viewsets.ModelViewSet):

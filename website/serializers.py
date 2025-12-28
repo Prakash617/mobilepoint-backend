@@ -1,7 +1,9 @@
 from rest_framework import serializers
 from .models import (
-    Carousel, CarouselSlide, Advertisement, Banner, 
-    Testimonial, FAQ, NewsletterSubscriber, ContactMessage, SiteSettings, CuratedItem
+    Carousel, CarouselSlide, Advertisement, 
+    # Banner, 
+    # Testimonial, FAQ, 
+    NewsletterSubscriber, ContactMessage, SiteSettings, CuratedItem
 )
 
 
@@ -48,37 +50,37 @@ class AdvertisementSerializer(serializers.ModelSerializer):
         return 0
 
 
-class BannerSerializer(serializers.ModelSerializer):
-    is_valid = serializers.BooleanField(read_only=True)
+# class BannerSerializer(serializers.ModelSerializer):
+#     is_valid = serializers.BooleanField(read_only=True)
     
-    class Meta:
-        model = Banner
-        fields = [
-            'id', 'title', 'banner_type', 'position', 'heading', 'subheading',
-            'description', 'image', 'mobile_image', 'background_color',
-            'text_color', 'button_text', 'button_link', 'button_color',
-            'is_active', 'start_date', 'end_date', 'is_valid', 'order'
-        ]
+#     class Meta:
+#         model = Banner
+#         fields = [
+#             'id', 'title', 'banner_type', 'position', 'heading', 'subheading',
+#             'description', 'image', 'mobile_image', 'background_color',
+#             'text_color', 'button_text', 'button_link', 'button_color',
+#             'is_active', 'start_date', 'end_date', 'is_valid', 'order'
+#         ]
 
 
-class TestimonialSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Testimonial
-        fields = [
-            'id', 'customer_name', 'customer_image', 'designation',
-            'company', 'rating', 'title', 'content', 'product',
-            'is_featured', 'is_active', 'created_at'
-        ]
+# class TestimonialSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = Testimonial
+#         fields = [
+#             'id', 'customer_name', 'customer_image', 'designation',
+#             'company', 'rating', 'title', 'content', 'product',
+#             'is_featured', 'is_active', 'created_at'
+#         ]
 
 
-class FAQSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FAQ
-        fields = [
-            'id', 'category', 'question', 'answer', 'is_active',
-            'order', 'view_count', 'helpful_count', 'created_at'
-        ]
-        read_only_fields = ['view_count', 'helpful_count']
+# class FAQSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = FAQ
+#         fields = [
+#             'id', 'category', 'question', 'answer', 'is_active',
+#             'order', 'view_count', 'helpful_count', 'created_at'
+#         ]
+#         read_only_fields = ['view_count', 'helpful_count']
 
 
 class NewsletterSubscriberSerializer(serializers.ModelSerializer):

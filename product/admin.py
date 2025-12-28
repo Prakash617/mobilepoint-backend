@@ -4,7 +4,8 @@ from .models import (
     Category, Brand, Product, VariantAttribute, VariantAttributeValue,
     ProductVariant, ProductVariantAttributeValue, ProductImage, ProductPromotion,
     FrequentlyBoughtTogether,
-    ProductComparison,Deal,RecentlyViewedProduct
+    # ProductComparison,
+    Deal,RecentlyViewedProduct
     )
 
 
@@ -44,6 +45,7 @@ class ProductImageInline(admin.TabularInline):
     readonly_fields = ['image_preview']
     
     def image_preview(self, obj):
+        
         if obj.image:
             return format_html('<img src="{}" width="100" height="100" style="object-fit: contain;" />', obj.image.url)
         return '-'
@@ -58,7 +60,8 @@ class ProductVariantAttributeValueInline(admin.TabularInline):
 
 class ProductVariantInline(admin.TabularInline):
     model = ProductVariant
-    extra = 0
+    fk_name = 'product'  # This tells Django which FK to use
+    extra = 1  # Show 1 empty row for adding new variant
     fields = ['sku', 'price', 'compare_at_price', 'stock_quantity', 'is_active', 'is_default']
     readonly_fields = []
     show_change_link = True
@@ -308,28 +311,28 @@ class FrequentlyBoughtTogetherAdmin(admin.ModelAdmin):
 
 # -----------------------------------
 # Product Comparison Admin
-# -----------------------------------
-@admin.register(ProductComparison)
-class ProductComparisonAdmin(admin.ModelAdmin):
-    list_display = (
-        "user",
-        "product",
-        "added_at",
-    )
-    list_filter = (
-        "added_at",
-    )
-    search_fields = (
-        "user__username",
-        "user__email",
-        "product__name",
-    )
-    autocomplete_fields = (
-        "user",
-        "product",
-    )
-    date_hierarchy = "added_at"
-    ordering = ("-added_at",)
+# # -----------------------------------
+# @admin.register(ProductComparison)
+# class ProductComparisonAdmin(admin.ModelAdmin):
+#     list_display = (
+#         "user",
+#         "product",
+#         "added_at",
+#     )
+#     list_filter = (
+#         "added_at",
+#     )
+#     search_fields = (
+#         "user__username",
+#         "user__email",
+#         "product__name",
+#     )
+#     autocomplete_fields = (
+#         "user",
+#         "product",
+#     )
+#     date_hierarchy = "added_at"
+#     ordering = ("-added_at",)
 
 
 from django.contrib import admin

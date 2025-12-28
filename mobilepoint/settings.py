@@ -72,10 +72,10 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    'https://api.gowell.edu.np/',
-    'https://mobilepoint-seven.vercel.app/',
-    
+    "https://api.gowell.edu.np",
+    "https://mobilepoint-seven.vercel.app",
 ]
+
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
 CORS_ALLOW_SAME_ORIGIN = True
@@ -165,7 +165,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 DASHUB_SETTINGS = {
-    "site_logo": "/static/logo.svg",
+    "site_logo": "/static/logo.png",
     "site_icon": "/static/favicon.ico",
     "theme_color": "#31aa98",
     "border_radius": "5px",
@@ -204,6 +204,7 @@ DASHUB_SETTINGS = {
         "product.brand": "hgi hgi-stroke hgi-crown",
         # "product.product": "hgi hgi-stroke hgi-box",
         "product.product": "hgi hgi-stroke hgi-shopping-basket-check-in-01",
+        "product.recentlyviewedproduct": "hgi hgi-stroke hgi-move-01",
 
         # Variants system
         "product.variantattribute": "hgi hgi-stroke hgi-settings-02",
@@ -220,7 +221,7 @@ DASHUB_SETTINGS = {
 
         # Merchandising
         "product.frequentlyboughttogether": "hgi hgi-stroke hgi-repeat",
-        "product.productcomparison": "hgi hgi-stroke hgi-agreement-01",
+        # "product.productcomparison": "hgi hgi-stroke hgi-agreement-01",
         # Orders
     "orders.order": "hgi hgi-stroke hgi-invoice-01",
     "orders.orderitem": "hgi hgi-stroke hgi-list-view",
@@ -230,13 +231,14 @@ DASHUB_SETTINGS = {
     "wishlist.wishlist": "hgi hgi-stroke hgi-favourite",
     "wishlist.wishlistitem": "hgi hgi-stroke hgi-heart-add",
     # Website app
-    "website.carousel": "hgi hgi-stroke hgi-sliders-01",
-    "website.carouselslide": "hgi hgi-stroke hgi-image-01",
-    "website.advertisement": "hgi hgi-stroke hgi-megaphone",
-    "website.banner": "hgi hgi-stroke hgi-flag",
-    "website.testimonial": "hgi hgi-stroke hgi-user-voice",
-    "website.faq": "hgi hgi-stroke hgi-question-circle",
-    "website.newslettersubscriber": "hgi hgi-stroke hgi-mail",
+    "website.carousel": "hgi hgi-stroke hgi-carousel-horizontal",
+    "website.carouselslide": "hgi hgi-stroke hgi-horizonal-scroll-point",
+    "website.advertisement": "hgi hgi-stroke hgi-advertisiment",
+    "website.curateditem": "hgi hgi-stroke hgi-ungroup-items",
+    # "website.banner": "hgi hgi-stroke hgi-flag",
+    # "website.testimonial": "hgi hgi-stroke hgi-user-voice",
+    # "website.faq": "hgi hgi-stroke hgi-question-circle",
+    "website.newslettersubscriber": "hgi hgi-stroke hgi-news",
     "website.contactmessage": "hgi hgi-stroke hgi-mail-open",
     "website.sitesettings": "hgi hgi-stroke hgi-settings-02",
     },

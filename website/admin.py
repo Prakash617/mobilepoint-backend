@@ -1,7 +1,9 @@
 from django.contrib import admin
 from .models import (
-    Carousel, CarouselSlide, Advertisement, Banner,
-    Testimonial, FAQ, NewsletterSubscriber, ContactMessage, SiteSettings,CuratedItem
+    Carousel, CarouselSlide, Advertisement,
+    # Banner,
+    # Testimonial, FAQ, 
+    NewsletterSubscriber, ContactMessage, SiteSettings,CuratedItem
 )
 from django.utils.html import format_html
 from django.core.exceptions import ValidationError
@@ -79,25 +81,25 @@ class AdvertisementAdmin(admin.ModelAdmin):
     get_ctr.short_description = 'CTR'
 
 
-@admin.register(Banner)
-class BannerAdmin(admin.ModelAdmin):
-    list_display = ['title', 'banner_type', 'position', 'is_active', 'start_date', 'end_date']
-    list_filter = ['banner_type', 'position', 'is_active']
-    search_fields = ['title', 'heading']
+# @admin.register(Banner)
+# class BannerAdmin(admin.ModelAdmin):
+#     list_display = ['title', 'banner_type', 'position', 'is_active', 'start_date', 'end_date']
+#     list_filter = ['banner_type', 'position', 'is_active']
+#     search_fields = ['title', 'heading']
 
 
-@admin.register(Testimonial)
-class TestimonialAdmin(admin.ModelAdmin):
-    list_display = ['customer_name', 'rating', 'is_featured', 'is_active', 'created_at']
-    list_filter = ['rating', 'is_featured', 'is_active']
-    search_fields = ['customer_name', 'title', 'content']
+# @admin.register(Testimonial)
+# class TestimonialAdmin(admin.ModelAdmin):
+#     list_display = ['customer_name', 'rating', 'is_featured', 'is_active', 'created_at']
+#     list_filter = ['rating', 'is_featured', 'is_active']
+#     search_fields = ['customer_name', 'title', 'content']
 
 
-@admin.register(FAQ)
-class FAQAdmin(admin.ModelAdmin):
-    list_display = ['question', 'category', 'is_active', 'view_count', 'helpful_count', 'order']
-    list_filter = ['category', 'is_active']
-    search_fields = ['question', 'answer']
+# @admin.register(FAQ)
+# class FAQAdmin(admin.ModelAdmin):
+#     list_display = ['question', 'category', 'is_active', 'view_count', 'helpful_count', 'order']
+#     list_filter = ['category', 'is_active']
+#     search_fields = ['question', 'answer']
 
 
 @admin.register(NewsletterSubscriber)

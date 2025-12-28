@@ -1,0 +1,14 @@
+.dh-sidebar .m-header {
+    height: 100px;
+    display: flex;
+    align-items: center;
+    padding: 16px 24px;
+    justify-content: center;
+}
+
+.dh-sidebar .m-header img {
+    max-height: 80px;
+    max-width: 100%;
+    object-fit: contain;
+}
+

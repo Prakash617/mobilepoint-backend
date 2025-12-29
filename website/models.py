@@ -66,25 +66,25 @@ class CarouselSlide(models.Model):
 
 class Advertisement(models.Model):
     AD_TYPE_CHOICES = [
-        ('banner', 'Banner'),
+        # ('banner', 'Banner'),
         ('photo', 'Photo Ad'),
-        ('sidebar', 'Sidebar'),
-        ('popup', 'Popup'),
-        ('inline', 'Inline Content'),
-        ('video', 'Video Ad'),
+        # ('sidebar', 'Sidebar'),
+        # ('popup', 'Popup'),
+        # ('inline', 'Inline Content'),
+        # ('video', 'Video Ad'),
     ]
 
     POSITION_CHOICES = [
-        ('header', 'Header'),
-        ('footer', 'Footer'),
-        ('sidebar_left', 'Sidebar Left'),
-        ('sidebar_right', 'Sidebar Right'),
+        # ('header', 'Header'),
+        # ('footer', 'Footer'),
+        # ('sidebar_left', 'Sidebar Left'),
+        # ('sidebar_right', 'Sidebar Right'),
         ('home_top', 'Home Top'),
-        ('home_middle', 'Home Middle'),
-        ('home_bottom', 'Home Bottom'),
-        ('category_top', 'Category Top'),
-        ('product_sidebar', 'Product Sidebar'),
-        ('checkout', 'Checkout Page'),
+        # ('home_middle', 'Home Middle'),
+        # ('home_bottom', 'Home Bottom'),
+        # ('category_top', 'Category Top'),
+        # ('product_sidebar', 'Product Sidebar'),
+        # ('checkout', 'Checkout Page'),
     ]
 
     title = models.CharField(max_length=200)

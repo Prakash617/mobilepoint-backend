@@ -211,12 +211,22 @@ class ProductImage(models.Model):
         ordering = ['order', 'created_at']
 
     def __str__(self):
-        return f"Image for {self.product.name}"
+        if self.product:
+            return f"Image for {self.product.name}"
+        return "Image (no product)"
 
     def save(self, *args, **kwargs):
-        # Ensure only one primary image per product
-        if self.is_primary:
-            ProductImage.objects.filter(product=self.product, is_primary=True).exclude(pk=self.pk).update(is_primary=False)
+        # Auto-set product from variant if missing
+        if self.variant:
+            self.product = self.variant.product
+
+        # Only one primary per product
+        if self.is_primary and self.product:
+            ProductImage.objects.filter(
+                product=self.product,
+                is_primary=True
+            ).exclude(pk=self.pk).update(is_primary=False)
+
         super().save(*args, **kwargs)
         
         

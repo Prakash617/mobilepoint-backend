@@ -9,6 +9,9 @@
 Thumbs.db
 **/migrations/*.py
 **/migrations/__pycache__/
+me.txt
+server.sh
+
 
 # ======================
 # Python / Django

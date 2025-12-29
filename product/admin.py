@@ -40,16 +40,34 @@ class BrandAdmin(admin.ModelAdmin):
 
 class ProductImageInline(admin.TabularInline):
     model = ProductImage
+    fk_name = "product"   
     extra = 1
-    fields = ['image', 'alt_text', 'is_primary', 'order', 'variant', 'image_preview']
+
+    fields = ['image', 'image_preview', 'alt_text', 'is_primary', 'order']
     readonly_fields = ['image_preview']
-    
+
     def image_preview(self, obj):
-        
-        if obj.image:
-            return format_html('<img src="{}" width="100" height="100" style="object-fit: contain;" />', obj.image.url)
-        return '-'
-    image_preview.short_description = 'Preview'
+        if obj.pk and obj.image:
+            return format_html(
+                '<img src="{}" style="max-width:100px; max-height:100px; object-fit:contain;" />',
+                obj.image.url
+            )
+        return "No image"
+    
+class ProductImageInlineForVariant(admin.TabularInline):
+    model = ProductImage
+    fk_name = "variant"          # Must point to Variant FK
+    extra = 1
+    fields = ['image', 'image_preview', 'alt_text', 'is_primary', 'order']
+    readonly_fields = ['image_preview']
+
+    def image_preview(self, obj):
+        if obj.pk and obj.image:
+            return format_html(
+                '<img src="{}" style="max-width:100px; max-height:100px; object-fit:contain;" />',
+                obj.image.url
+            )
+        return "No image"
 
 
 class ProductVariantAttributeValueInline(admin.TabularInline):
@@ -148,7 +166,7 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'is_default', 'product__category', 'product__brand']
     search_fields = ['sku', 'product__name']
     autocomplete_fields = ['product']
-    inlines = [ProductVariantAttributeValueInline, ProductImageInline]
+    inlines = [ProductVariantAttributeValueInline, ProductImageInlineForVariant]
     list_editable = ['is_active', 'stock_quantity','sold_quantity']
     
     fieldsets = (

@@ -167,7 +167,7 @@ MEDIA_URL = "/media/"
 DASHUB_SETTINGS = {
     "site_logo": "/static/logo.png",
     "site_icon": "/static/favicon.ico",
-    "theme_color": "#31aa98",
+    "theme_color": "#2D7DBF",
     "border_radius": "5px",
     "hide_models": [
         "auth",  # Hides all models in the auth app
@@ -188,7 +188,7 @@ DASHUB_SETTINGS = {
             }
         ],
     },
-    "submenus_models": ["auth.group"],
+ 
     "default_orders": {
         "auth": 10,
         "auth.group": 4,

@@ -204,7 +204,7 @@ class SiteSettings(models.Model):
 
     maintenance_mode = models.BooleanField(default=False)
     allow_guest_checkout = models.BooleanField(default=True)
-    show_stock_quantity = models.BooleanField(default=True)
+    # show_stock_quantity = models.BooleanField(default=True)
 
     meta_title = models.CharField(max_length=200, blank=True, null=True)
     meta_description = models.TextField(blank=True, null=True)

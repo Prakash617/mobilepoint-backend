@@ -216,7 +216,10 @@ class ProductImage(models.Model):
         return "Image (no product)"
 
     def save(self, *args, **kwargs):
-        # Auto-set product from variant if missing
+        # If the image is associated with a variant,
+        # ensure the product field is also set.
+        # This prevents errors in the admin when an image is added to a variant
+        # but the product is not explicitly set.
         if self.variant:
             self.product = self.variant.product
 

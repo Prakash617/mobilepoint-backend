@@ -16,6 +16,7 @@ router.register(r'newsletter', NewsletterSubscriberViewSet, basename='newsletter
 router.register(r'contact', ContactMessageViewSet, basename='contact')
 router.register(r'settings', SiteSettingsViewSet, basename='settings')
 router.register(r"curated", CuratedItemViewSet, basename="curated")
+router.register(r'site-settings', SiteSettingsViewSet, basename='site-settings')
 
 
 app_name = 'website'

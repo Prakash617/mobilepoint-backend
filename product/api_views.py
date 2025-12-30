@@ -72,7 +72,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         # Popular categories by total sold quantity
-        popular = self.request.query_params.get("popular")
+        popular = self.request.query_params.get("is_popular")
         if popular == "true":
             popular_qs = queryset.annotate(total_sold=Sum("products__variants__sold_quantity"))\
                                 .filter(total_sold__gt=0)\

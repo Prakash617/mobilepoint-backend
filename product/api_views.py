@@ -56,6 +56,11 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = Category.objects.filter(is_active=True)
         limit = self.request.query_params.get("limit", 10)
+
+        try:
+            limit = int(limit)
+        except ValueError:
+            limit = 10  # fallback to default if query param is invalid
         
         # Featured categories
         is_featured = self.request.query_params.get("is_featured")
@@ -98,6 +103,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(top_categories, many=True)
         return Response(serializer.data)
+
 class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for brands

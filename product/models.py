@@ -90,7 +90,7 @@ class Product(models.Model):
     @property
     def is_new(self):
         """Returns True if the product was created within the last 3 days"""
-        return timezone.now() <= self.created_at + timedelta(days=3)
+        return timezone.now() <= self.created_at + timedelta(days=14)
 
 
 class VariantAttribute(models.Model):

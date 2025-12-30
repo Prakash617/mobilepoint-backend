@@ -196,23 +196,68 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(products, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=["get"], url_path="new")
+    def new_products(self, request):
+        """Get newly added products with dynamic limit"""
+
+        # Get limit from query params, default 10
+        try:
+            limit = int(request.query_params.get("limit", 10))
+        except ValueError:
+            limit = 10
+
+        # Fetch recent products from DB (pre-limit for performance)
+        queryset = self.get_queryset().order_by("-created_at")[:50]
+
+        # Filter in Python by is_new and respect limit
+        new_products = []
+        for product in queryset:
+            if product.is_new:
+                new_products.append(product)
+                if len(new_products) == limit:
+                    break
+
+        # Paginate the filtered list (optional)
+        page = self.paginate_queryset(new_products)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(new_products, many=True)
+        return Response(serializer.data)
+
+    from django.db.models import Sum
+
+    from django.db.models import Sum
 
     @action(detail=False, methods=["get"])
     def best_seller(self, request):
-        """Get dynamically calculated best seller products"""
+        """Get dynamically calculated best seller products with pagination"""
 
-        # Annotate products with total sold quantity from variants
-        products_with_sales = (
+        # Get optional limit from query params (used for pre-limit to reduce DB load)
+        try:
+            limit = int(request.query_params.get("limit", 50))  # default pre-limit
+        except ValueError:
+            limit = 50
+
+        # Annotate products with total sold quantity
+        queryset = (
             self.get_queryset()
             .annotate(total_sold=Sum("variants__sold_quantity"))
-            .order_by("-total_sold")
-        )  # highest sold first
+            .order_by("-total_sold")[:limit]  # pre-limit for performance
+        )
 
-        # Optional: limit top N
-        top_sellers = products_with_sales[:10]
+        # Paginate the queryset
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(top_sellers, many=True)
+        # If pagination is not applied, serialize the whole queryset
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @action(detail=True, methods=["get"])
     def related(self, request, slug=None):
@@ -349,46 +394,46 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=["post"])
     def find_variant(self, request, slug=None):
-        """
-        Find a specific variant based on selected attributes
+            """
+            Find a specific variant based on selected attributes
 
-        POST data example:
-        {
-            "attributes": {
-                "Color": "Black",
-                "Memory": "256GB"
+            POST data example:
+            {
+                "attributes": {
+                    "Color": "Black",
+                    "Memory": "256GB"
+                }
             }
-        }
-        """
-        product = self.get_object()
-        attributes = request.data.get("attributes", {})
+            """
+            product = self.get_object()
+            attributes = request.data.get("attributes", {})
 
-        if not attributes:
-            return Response(
-                {"error": "No attributes provided"}, status=status.HTTP_400_BAD_REQUEST
-            )
+            if not attributes:
+                return Response(
+                    {"error": "No attributes provided"}, status=status.HTTP_400_BAD_REQUEST
+                )
 
-        # Find variant matching all attributes
-        variants = product.variants.filter(is_active=True)
+            # Find variant matching all attributes
+            variants = product.variants.filter(is_active=True)
 
-        for attr_name, attr_value in attributes.items():
-            variants = variants.filter(
-                attribute_values__attribute_value__attribute__name=attr_name,
-                attribute_values__attribute_value__value=attr_value,
-            )
+            for attr_name, attr_value in attributes.items():
+                variants = variants.filter(
+                    attribute_values__attribute_value__attribute__name=attr_name,
+                    attribute_values__attribute_value__value=attr_value,
+                )
 
-        variant = variants.first()
+            variant = variants.first()
 
-        if variant:
-            serializer = ProductVariantDetailSerializer(
-                variant, context={"request": request}
-            )
-            return Response(serializer.data)
-        else:
-            return Response(
-                {"error": "No variant found with the specified attributes"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            if variant:
+                serializer = ProductVariantDetailSerializer(
+                    variant, context={"request": request}
+                )
+                return Response(serializer.data)
+            else:
+                return Response(
+                    {"error": "No variant found with the specified attributes"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
 
 
 class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):

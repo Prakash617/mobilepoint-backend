@@ -130,7 +130,9 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url', 'youtube_url')
         }),
         ('Settings', {
-            'fields': ('maintenance_mode', 'allow_guest_checkout', 'show_stock_quantity')
+            'fields': ('maintenance_mode', 'allow_guest_checkout',
+                    #    'show_stock_quantity'
+                       )
         }),
         ('SEO', {
             'fields': ('meta_title', 'meta_description', 'meta_keywords')

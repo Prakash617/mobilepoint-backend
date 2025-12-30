@@ -275,7 +275,7 @@ DASHUB_SETTINGS = {
     ],
      # Sidebar structure
     "custom_links": {
-        "producthhhhh": [
+        "productsettings": [
             {
                 "name": "Variants",
                 "icon": "hgi hgi-stroke hgi-layers-01",
@@ -285,12 +285,17 @@ DASHUB_SETTINGS = {
                 ],
             },
             {
-                # "name": "User Management",
-                # "icon": "hgi hgi-stroke hgi-users",
-                "model": "product.product",
+                "name": "User Management",
+                "icon": "hgi hgi-stroke hgi-users",
+                "url": "#",
+                # "model": "product.product",
                 "submenu": [
                     {"model": "product.variantattribute", "order": 1},
-                    {"model": "product.productvariant", "order": 2}
+                    {"model": "product.product", "order": 6},
+                    {"model": "product.productvariant", "order": 2},
+                    {"model": "product.productvariantattributevalue", "order": 3},
+                    {"model": "product.productpromotion", "order": 4},
+                    {"model": "product.frequentlyboughttogether", "order": 5},
                 ],
             },
             {"name": "File Manager", "url": "/admin/filemanager/", "icon": "fa-solid fa-folder", "order": 1},

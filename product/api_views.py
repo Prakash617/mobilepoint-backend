@@ -55,23 +55,36 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = Category.objects.filter(is_active=True)
-
-        # 🔹 Featured categories
+        limit = self.request.query_params.get("limit", 10)
+        
+        # Featured categories
         is_featured = self.request.query_params.get("is_featured")
         if is_featured == "true":
-            queryset = queryset.filter(is_featured=True)[:10]
+            queryset = queryset.filter(is_featured=True)[:int(limit)]
 
-        # 🔹 Dynamic top categories by product count
+        # Top categories by product count
         top = self.request.query_params.get("top")
         if top == "true":
-            limit = self.request.query_params.get("limit", 8)
             queryset = (
                 queryset.annotate(product_count=Count("products"))
                 .filter(product_count__gt=0)
-                .order_by("-product_count")[: int(limit)]
+                .order_by("-product_count")[:int(limit)]
             )
 
-        return queryset
+        # Popular categories by total sold quantity
+        popular = self.request.query_params.get("popular")
+        if popular == "true":
+            popular_qs = queryset.annotate(total_sold=Sum("products__variants__sold_quantity"))\
+                                .filter(total_sold__gt=0)\
+                                .order_by("-total_sold")[:limit]
+            if popular_qs.exists():
+                return popular_qs
+            else:
+                # Fallback to featured if popular is empty
+                featured_qs = queryset.filter(is_featured=True)[:limit]
+                return featured_qs
+
+        return queryset[:limit]
     
     @action(detail=False, methods=['get'], url_path='grouped-sections')
     def grouped_sections(self, request):  # <--- Added 'request' here

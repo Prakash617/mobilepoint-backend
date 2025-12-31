@@ -7,6 +7,7 @@ from .models import (
     # ProductComparison,
     Deal,RecentlyViewedProduct
     )
+from reviews.models import ProductReview
 
 
 @admin.register(Category)
@@ -83,6 +84,15 @@ class ProductVariantInline(admin.TabularInline):
     fields = ['sku', 'price', 'compare_at_price', 'stock_quantity', 'is_active', 'is_default']
     readonly_fields = []
     show_change_link = True
+    
+
+class ProductReviewInline(admin.TabularInline):
+    model = ProductReview
+    extra = 0
+    fields = ('user', 'rating', 'title', 'is_approved', 'created_at')
+    readonly_fields = ('created_at',)
+    can_delete = True
+    show_change_link = True
 
 
 @admin.register(Product)
@@ -93,7 +103,7 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ['is_active', 'is_featured']
     autocomplete_fields = ['category', 'brand']
-    inlines = [ProductImageInline, ProductVariantInline]
+    inlines = [ProductReviewInline,ProductImageInline, ProductVariantInline]
     
     fieldsets = (
         ('Basic Information', {

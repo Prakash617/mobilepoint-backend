@@ -5,6 +5,10 @@ from django.utils import timezone
 from accounts.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from datetime import timedelta
+import random
+import string
+from django.db.models import Avg, Count
+
 
 class Category(models.Model):
     """Product categories like Smartphones, Laptops, etc."""
@@ -40,7 +44,7 @@ class Brand(models.Model):
     
     class Meta:
         verbose_name = "Brand"
-        verbose_name_plural = "Brands"
+        verbose_name_plural = "Brand"
 
     def __str__(self):
         return self.name
@@ -73,6 +77,19 @@ class Product(models.Model):
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    average_rating = models.DecimalField(
+        max_digits=3, decimal_places=2, default=0.0
+    )
+    review_count = models.PositiveIntegerField(default=0)
+
+    def update_rating(self):
+        agg = self.reviews.filter(is_approved=True).aggregate(
+            average=Avg('rating'),
+            count=Count('id')
+        )
+        self.average_rating = agg['average'] or 0.0
+        self.review_count = agg['count'] or 0
+        self.save(update_fields=['average_rating', 'review_count'])
 
     class Meta:
         verbose_name = "Product"
@@ -129,7 +146,7 @@ class VariantAttributeValue(models.Model):
 class ProductVariant(models.Model):
     """Actual product variants with specific attribute combinations"""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    sku = models.CharField(max_length=100, unique=True)
+    sku = models.CharField(max_length=100, unique=True , blank=True)
     
     # Pricing
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -165,8 +182,54 @@ class ProductVariant(models.Model):
     @property
     def is_low_stock(self):
         return 0 < self.stock_quantity <= self.low_stock_threshold
+    
+    def generate_sku(self):
+        """
+        Generate a unique SKU.
+        If variant attributes are available, it creates a descriptive SKU.
+        e.g., 'BRAND-PRODUCT-ATTR1-ATTR2'
+        Otherwise, it falls back to a random SKU.
+        """
+        # --- Descriptive SKU part ---
+        # This part works if the variant has been saved and has attributes.
+        if self.pk and self.attribute_values.exists():
+            parts = []
+            if self.product.brand:
+                # Use a short, uppercase code for the brand
+                brand_part = slugify(self.product.brand.name).upper().replace('-', '')[:4]
+                parts.append(brand_part)
+
+            # Use a short, uppercase code for the product name
+            product_part = slugify(self.product.name).upper().replace('-', '')[:10]
+            parts.append(product_part)
+
+            # Add attribute values, ordered by attribute name for consistency
+            attributes = self.attribute_values.order_by('attribute_value__attribute__name')
+            attr_parts = [slugify(attr.attribute_value.value).upper() for attr in attributes]
+            parts.extend(attr_parts)
+
+            base_sku = "-".join(parts)
+            sku = base_sku
+
+            # Ensure SKU is unique by appending a counter if needed
+            counter = 1
+            while ProductVariant.objects.filter(sku=sku).exclude(pk=self.pk).exists():
+                sku = f"{base_sku}-{counter}"
+                counter += 1
+            return sku
+
+        # --- Fallback to random SKU ---
+        # This is used if attributes are not yet set (e.g. on initial creation).
+        base = slugify(self.product.name)[:10]
+        while True:
+            random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            sku = f"{base}-{random_suffix}"
+            if not ProductVariant.objects.filter(sku=sku).exists():
+                return sku
 
     def save(self, *args, **kwargs):
+        # Auto-generate SKU if not provided or to update based on attributes
+        self.sku = self.generate_sku()
         # Ensure only one default variant per product
         if self.is_default:
             ProductVariant.objects.filter(product=self.product, is_default=True).exclude(pk=self.pk).update(is_default=False)

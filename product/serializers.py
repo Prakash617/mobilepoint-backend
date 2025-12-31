@@ -62,6 +62,7 @@ class CategorySerializer(serializers.ModelSerializer):
     #     return url
 
 class BrandSerializer(serializers.ModelSerializer):
+    
     class Meta:
         model = Brand
         fields = ['id', 'name', 'slug', 'is_featured', 'logo', 'description', 'is_active']
@@ -134,6 +135,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     free_gift = serializers.SerializerMethodField()
     is_new = serializers.SerializerMethodField()
     discount = serializers.SerializerMethodField()
+    available_attributes = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -141,11 +143,32 @@ class ProductListSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug','short_description', 'description', 'category', 'brand',
             'base_price', 'is_active', 'is_featured', 
             'primary_image', 'default_variant', 'price_range',
-            'free_shipping', 'free_gift', 'is_new', 'discount'
+            'free_shipping', 'free_gift', 'is_new', 'discount','available_attributes',
         ]
     
     def get_is_new(self, obj):
         return obj.is_new
+    
+    def get_available_attributes(self, obj):
+        """
+        Returns a dictionary of available attributes and their values
+        for a given product.
+        Example:
+        {
+            "Color": ["Red", "Blue"],
+            "Storage": ["128GB", "256GB"]
+        }
+        """
+        attributes = {}
+        for variant in obj.variants.filter(is_active=True):
+            for attr_val in variant.attribute_values.all():
+                attr_name = attr_val.attribute.name
+                if attr_name not in attributes:
+                    attributes[attr_name] = set()
+                attributes[attr_name].add(attr_val.value)
+        
+        # Convert sets to lists for JSON serialization
+        return {k: list(v) for k, v in attributes.items()}
     
     def get_discount(self, obj):
         """

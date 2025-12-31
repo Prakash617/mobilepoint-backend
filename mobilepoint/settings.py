@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "orders",
     "wishlist",
     "website",
+    "reviews",
 ]
 
 # REST Framework Configuration
@@ -163,60 +164,231 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, "static")]
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
+# DASHUB_SETTINGS = {
+#     "site_logo": "/static/logo.png",
+#     "site_icon": "/static/favicon.ico",
+#     "theme_color": "#2D7DBF",
+#     "border_radius": "5px",
+#     "hide_models": [
+#         "auth",
+#         "auth.group",
+#         "product.productimage",
+#         "product.recentlyviewedproduct",
+#     ],
+   
+#     # "submenus_models": [
+#     #     "product.variantattributevalue",
+#     #     "product.productvariantattributevalue",
+#     # ],
+#     # "model_submenus": {
+#     #     # "product.variantattribute": [
+#     #     #     {"model": "product.variantattributevalue", "order": 1}
+#     #     # ],
+#     #     "product.productvariant": [
+#     #         {"model": "product.productvariantattributevalue", "order": 1}
+#     #     ],
+#     # },
+#     "default_orders": {
+#         # Core apps
+#         "accounts": 10,
+#         "accounts.user": 5,
+#         "accounts.usergroup": 4,
+#         # Product app
+#         "product": 20,
+#         "product.category": 1,
+#         "product.brand": 2,
+#         "product.product": 3,
+#         "product.recentlyviewedproduct": 4,
+#         "product.variantattribute": 5,
+#         "product.productvariant": 7,
+#         "product.variantattributevalue": 6,
+#         "product.productvariantattributevalue": 8,
+#         "product.productimage": 9,
+#         "product.productpromotion": 10,
+#         "product.deal": 11,
+#         "product.frequentlyboughttogether": 12,
+#         # Orders app
+#         "orders": 30,
+#         "orders.order": 1,
+#         "orders.orderitem": 2,
+#         "orders.orderstatushistory": 3,
+#         # Wishlist app
+#         "wishlist": 40,
+#         "wishlist.wishlist": 1,
+#         "wishlist.wishlistitem": 2,
+#         # Website app
+#         "website": 50,
+#         "website.carousel": 1,
+#         "website.carouselslide": 2,
+#         "website.advertisement": 3,
+#         "website.curateditem": 4,
+#         "website.newslettersubscriber": 5,
+#         "website.contactmessage": 6,
+#         "website.sitesettings": 7,
+#     },
+#     "icons": {
+#         "accounts.user": "hgi hgi-stroke hgi-user",
+#         "accounts.usergroup": "hgi hgi-stroke hgi-users",
+#         "product": "hgi hgi-stroke hgi-shopping-bag",
+#         # Core catalog
+#         "product.category": "hgi hgi-stroke hgi-grid-view",
+#         "product.brand": "hgi hgi-stroke hgi-crown",
+#         # "product.product": "hgi hgi-stroke hgi-box",
+#         "product.product": "hgi hgi-stroke hgi-shopping-basket-check-in-01",
+#         "product.recentlyviewedproduct": "hgi hgi-stroke hgi-move-01",
+#         # Variants system
+#         "product.variantattribute": "hgi hgi-stroke hgi-settings-02",
+#         "product.variantattributevalue": "hgi hgi-stroke hgi-arc-browser",
+#         "product.productvariant": "hgi hgi-stroke hgi-layers-01",
+#         "product.productvariantattributevalue": "hgi hgi-stroke hgi-link-02",
+#         # Media
+#         "product.productimage": "hgi hgi-stroke hgi-image-01",
+#         # Promotions & deals
+#         "product.productpromotion": "hgi hgi-stroke hgi-gift",
+#         "product.deal": "hgi hgi-stroke hgi-flash",
+#         # Merchandising
+#         "product.frequentlyboughttogether": "hgi hgi-stroke hgi-repeat",
+#         # "product.productcomparison": "hgi hgi-stroke hgi-agreement-01",
+#         # Orders
+#         "orders.order": "hgi hgi-stroke hgi-invoice-01",
+#         "orders.orderitem": "hgi hgi-stroke hgi-list-view",
+#         "orders.orderstatushistory": "hgi hgi-stroke hgi-time-quarter",
+#         # Wishlist
+#         "wishlist.wishlist": "hgi hgi-stroke hgi-favourite",
+#         "wishlist.wishlistitem": "hgi hgi-stroke hgi-heart-add",
+#         # Website app
+#         "website.carousel": "hgi hgi-stroke hgi-carousel-horizontal",
+#         "website.carouselslide": "hgi hgi-stroke hgi-horizonal-scroll-point",
+#         "website.advertisement": "hgi hgi-stroke hgi-advertisiment",
+#         "website.curateditem": "hgi hgi-stroke hgi-ungroup-items",
+#         # "website.banner": "hgi hgi-stroke hgi-flag",
+#         # "website.testimonial": "hgi hgi-stroke hgi-user-voice",
+#         # "website.faq": "hgi hgi-stroke hgi-question-circle",
+#         "website.newslettersubscriber": "hgi hgi-stroke hgi-news",
+#         "website.contactmessage": "hgi hgi-stroke hgi-mail-open",
+#         "website.sitesettings": "hgi hgi-stroke hgi-settings-02",
+#     },
+#     "custom_js": [
+#         "/static/js/admin.js",
+#     ],
+#     "custom_css": [
+#         "/static/css/admin.css",
+#     ],
+#      # Sidebar structure
+#     "custom_links": {
+#         "productsettings": [
+#             {
+#                 "name": "Variants",
+#                 "icon": "hgi hgi-stroke hgi-layers-01",
+#                 "submenu": [
+#                     {"model": "product.variantattribute", "order": 1},
+#                     {"model": "product.productvariant", "order": 2},
+#                 ],
+#             },
+#             {
+#                 "name": "User Management",
+#                 "icon": "hgi hgi-stroke hgi-users",
+#                 "url": "#",
+#                 # "model": "product.product",
+#                 "submenu": [
+#                     {"model": "product.variantattribute", "order": 1},
+#                     {"model": "product.product", "order": 6},
+#                     {"model": "product.productvariant", "order": 2},
+#                     {"model": "product.productvariantattributevalue", "order": 3},
+#                     {"model": "product.productpromotion", "order": 4},
+#                     {"model": "product.frequentlyboughttogether", "order": 5},
+#                 ],
+#             },
+#             {"name": "File Manager", "url": "/admin/filemanager/", "icon": "fa-solid fa-folder", "order": 1},
+            
+#         ]
+#     },
+    
+# }
+
 DASHUB_SETTINGS = {
+    # --------------------------------------------------
+    # Branding
+    # --------------------------------------------------
     "site_logo": "/static/logo.png",
     "site_icon": "/static/favicon.ico",
     "theme_color": "#2D7DBF",
     "border_radius": "5px",
+
+    # --------------------------------------------------
+    # Hidden models
+    # --------------------------------------------------
     "hide_models": [
         "auth",
         "auth.group",
-        "product.productimage",
+        "accounts",
+        "accounts.user",
+        "accounts.usergroup",
+
+        "product",
+        "product.category",
+        "product.brand",
+        "product.product",
         "product.recentlyviewedproduct",
+        "product.variantattribute",
+        "product.variantattributevalue",
+        "product.productvariant",
+        "product.productvariantattributevalue",
+        "product.productimage",
+        "product.productpromotion",
+        "product.deal",
+        "product.frequentlyboughttogether",
+
+        "orders",
+        "orders.order",
+        "orders.orderitem",
+        "orders.orderstatushistory",
+
+        "wishlist",
+        "wishlist.wishlist",
+        "wishlist.wishlistitem",
+
+        "website",
+        "website.carousel",
+        "website.carouselslide",
+        "website.advertisement",
+        "website.curateditem",
+        "website.newslettersubscriber",
+        "website.contactmessage",
+        "website.sitesettings",
     ],
-   
-    # "submenus_models": [
-    #     "product.variantattributevalue",
-    #     "product.productvariantattributevalue",
-    # ],
-    "model_submenus": {
-        # "product.variantattribute": [
-        #     {"model": "product.variantattributevalue", "order": 1}
-        # ],
-        "product.productvariant": [
-            {"model": "product.productvariantattributevalue", "order": 1}
-        ],
-    },
+
+    # --------------------------------------------------
+    # Ordering
+    # --------------------------------------------------
     "default_orders": {
-        # Core apps
         "accounts": 10,
-        "accounts.user": 5,
-        "accounts.usergroup": 4,
-        # Product app
         "product": 20,
+        "orders": 30,
+        "wishlist": 40,
+        "website": 50,
+
+        "accounts.user": 1,
+        "accounts.usergroup": 2,
+
         "product.category": 1,
         "product.brand": 2,
         "product.product": 3,
-        "product.recentlyviewedproduct": 4,
-        "product.variantattribute": 5,
-        "product.productvariant": 7,
-        "product.variantattributevalue": 6,
-        "product.productvariantattributevalue": 8,
-        "product.productimage": 9,
-        "product.productpromotion": 10,
-        "product.deal": 11,
-        "product.frequentlyboughttogether": 12,
-        # Orders app
-        "orders": 30,
+        "product.variantattribute": 4,
+        "product.variantattributevalue": 5,
+        "product.productvariant": 6,
+        "product.productvariantattributevalue": 7,
+        "product.productpromotion": 8,
+        "product.deal": 9,
+        "product.frequentlyboughttogether": 10,
+
         "orders.order": 1,
         "orders.orderitem": 2,
         "orders.orderstatushistory": 3,
-        # Wishlist app
-        "wishlist": 40,
+
         "wishlist.wishlist": 1,
         "wishlist.wishlistitem": 2,
-        # Website app
-        "website": 50,
+
         "website.carousel": 1,
         "website.carouselslide": 2,
         "website.advertisement": 3,
@@ -225,85 +397,121 @@ DASHUB_SETTINGS = {
         "website.contactmessage": 6,
         "website.sitesettings": 7,
     },
+
+    # --------------------------------------------------
+    # Icons
+    # --------------------------------------------------
     "icons": {
         "accounts.user": "hgi hgi-stroke hgi-user",
         "accounts.usergroup": "hgi hgi-stroke hgi-users",
+
         "product": "hgi hgi-stroke hgi-shopping-bag",
-        # Core catalog
         "product.category": "hgi hgi-stroke hgi-grid-view",
         "product.brand": "hgi hgi-stroke hgi-crown",
-        # "product.product": "hgi hgi-stroke hgi-box",
         "product.product": "hgi hgi-stroke hgi-shopping-basket-check-in-01",
-        "product.recentlyviewedproduct": "hgi hgi-stroke hgi-move-01",
-        # Variants system
         "product.variantattribute": "hgi hgi-stroke hgi-settings-02",
         "product.variantattributevalue": "hgi hgi-stroke hgi-arc-browser",
         "product.productvariant": "hgi hgi-stroke hgi-layers-01",
         "product.productvariantattributevalue": "hgi hgi-stroke hgi-link-02",
-        # Media
-        "product.productimage": "hgi hgi-stroke hgi-image-01",
-        # Promotions & deals
         "product.productpromotion": "hgi hgi-stroke hgi-gift",
         "product.deal": "hgi hgi-stroke hgi-flash",
-        # Merchandising
-        "product.frequentlyboughttogether": "hgi hgi-stroke hgi-repeat",
-        # "product.productcomparison": "hgi hgi-stroke hgi-agreement-01",
-        # Orders
+
         "orders.order": "hgi hgi-stroke hgi-invoice-01",
         "orders.orderitem": "hgi hgi-stroke hgi-list-view",
-        "orders.orderstatushistory": "hgi hgi-stroke hgi-time-quarter",
-        # Wishlist
+
         "wishlist.wishlist": "hgi hgi-stroke hgi-favourite",
-        "wishlist.wishlistitem": "hgi hgi-stroke hgi-heart-add",
-        # Website app
+
         "website.carousel": "hgi hgi-stroke hgi-carousel-horizontal",
-        "website.carouselslide": "hgi hgi-stroke hgi-horizonal-scroll-point",
         "website.advertisement": "hgi hgi-stroke hgi-advertisiment",
-        "website.curateditem": "hgi hgi-stroke hgi-ungroup-items",
-        # "website.banner": "hgi hgi-stroke hgi-flag",
-        # "website.testimonial": "hgi hgi-stroke hgi-user-voice",
-        # "website.faq": "hgi hgi-stroke hgi-question-circle",
-        "website.newslettersubscriber": "hgi hgi-stroke hgi-news",
-        "website.contactmessage": "hgi hgi-stroke hgi-mail-open",
         "website.sitesettings": "hgi hgi-stroke hgi-settings-02",
     },
-    "custom_js": [
-        "/static/js/admin.js",
-    ],
-    "custom_css": [
-        "/static/css/admin.css",
-    ],
-     # Sidebar structure
+
+    # --------------------------------------------------
+    # Assets
+    # --------------------------------------------------
+    "custom_js": ["/static/js/admin.js"],
+    "custom_css": ["/static/css/admin.css"],
+
+    # --------------------------------------------------
+    # Sidebar (explicit URLs)
+    # --------------------------------------------------
     "custom_links": {
-        "productsettings": [
+        "product": [
             {
-                "name": "Variants",
+                "name": "Catalog",
+                "icon": "hgi hgi-stroke hgi-grid-view",
+                "url": "/admin/product/",
+                "submenu": [
+                    {"model": "product.category", "order": 1},
+                    {"model": "product.brand", "order": 2},
+                    {"model": "product.product", "order": 3},
+                ],
+            },
+            {
+                "name": "Variants & Attributes",
                 "icon": "hgi hgi-stroke hgi-layers-01",
+                "url": "/admin/product/variants/",
                 "submenu": [
                     {"model": "product.variantattribute", "order": 1},
-                    {"model": "product.productvariant", "order": 2},
+                    {"model": "product.variantattributevalue", "order": 2},
+                    {"model": "product.productvariant", "order": 3},
+                    {"model": "product.productvariantattributevalue", "order": 4},
                 ],
             },
             {
-                "name": "User Management",
-                "icon": "hgi hgi-stroke hgi-users",
-                "url": "#",
-                # "model": "product.product",
+                "name": "Promotions & Merchandising",
+                "icon": "hgi hgi-stroke hgi-gift",
+                "url": "/admin/product/promotions/",
                 "submenu": [
-                    {"model": "product.variantattribute", "order": 1},
-                    {"model": "product.product", "order": 6},
-                    {"model": "product.productvariant", "order": 2},
-                    {"model": "product.productvariantattributevalue", "order": 3},
-                    {"model": "product.productpromotion", "order": 4},
-                    {"model": "product.frequentlyboughttogether", "order": 5},
+                    {"model": "product.productpromotion", "order": 1},
+                    {"model": "product.deal", "order": 2},
+                    {"model": "product.frequentlyboughttogether", "order": 3},
                 ],
             },
-            {"name": "File Manager", "url": "/admin/filemanager/", "icon": "fa-solid fa-folder", "order": 1},
-            
-        ]
+        ],
+
+        "website": [
+            {
+                "name": "Content",
+                "icon": "hgi hgi-stroke hgi-carousel-horizontal",
+                "url": "/admin/website/content/",
+                "submenu": [
+                    {"model": "website.carousel", "order": 1},
+                    {"model": "website.carouselslide", "order": 2},
+                    {"model": "website.advertisement", "order": 3},
+                    {"model": "website.curateditem", "order": 4},
+                ],
+            },
+            {
+                "name": "Communication",
+                "icon": "hgi hgi-stroke hgi-mail-open",
+                "url": "/admin/website/communication/",
+                "submenu": [
+                    {"model": "website.newslettersubscriber", "order": 1},
+                    {"model": "website.contactmessage", "order": 2},
+                ],
+            },
+            {
+                "name": "Settings",
+                "icon": "hgi hgi-stroke hgi-settings-02",
+                "url": "/admin/website/settings/",
+                "submenu": [
+                    {"model": "website.sitesettings", "order": 1},
+                ],
+            },
+        ],
+
+        "tools": [
+            {
+                "name": "File Manager",
+                "url": "/admin/filemanager/",
+                "icon": "fa-solid fa-folder",
+                "order": 1,
+            }
+        ],
     },
-    
 }
+
 
 
 TINYMCE_JS_URL = "https://cdnjs.cloudflare.com/ajax/libs/tinymce/7.5.1/tinymce.min.js"

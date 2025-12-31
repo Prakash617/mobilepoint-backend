@@ -2,7 +2,10 @@ from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Q, Min, Max, Sum
+from django.db.models.functions import Coalesce
+from django.db.models import Q, Min, Max, Sum, Avg, DecimalField, F
+from .pagination import ProductPagination
+from django.utils import timezone
 from .models import (
     Category,
     Brand,
@@ -14,6 +17,7 @@ from .models import (
     Deal, 
     RecentlyViewedProduct
 )
+from reviews.models import ProductReview
 from .serializers import (
     CategorySerializer,
     BrandSerializer,
@@ -33,7 +37,7 @@ from rest_framework.permissions import (
     IsAuthenticatedOrReadOnly,
     AllowAny,
 )
-from .filters import DealFilter
+from .filters import DealFilter, ProductFilter
 
 
 from django.db.models import Count, Case, When, IntegerField
@@ -134,6 +138,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         .prefetch_related("images", "variants")
     )
     lookup_field = "slug"
+    filterset_class = ProductFilter
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -143,6 +148,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["name", "description"]
     ordering_fields = ["created_at", "name", "base_price"]
     ordering = ["-created_at"]
+    pagination_class = ProductPagination
 
     def get_serializer_class(self):
         if self.action == "retrieve":
@@ -170,9 +176,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(featured_products, many=True)
         return Response(serializer.data)
 
-    @action(
-        detail=False, methods=["get"], url_path="category/(?P<category_slug>[^/.]+)"
-    )
+    @action(detail=False, methods=["get"], url_path="category/(?P<category_slug>[^/.]+)")
     def by_category(self, request, category_slug=None):
         """Get products by category slug"""
         products = self.get_queryset().filter(category__slug=category_slug)
@@ -246,38 +250,142 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(new_products, many=True)
         return Response(serializer.data)
 
-    from django.db.models import Sum
+    from django.db.models import Count, Q
+    from rest_framework.decorators import action
+    from rest_framework.response import Response
 
-    from django.db.models import Sum
 
-    @action(detail=False, methods=["get"])
+    @action(detail=False, methods=['get'], url_path='filters_metadata')
+    def filters_metadata(self, request):
+        queryset = self.get_queryset().filter(is_active=True)
+
+        # --- Multi-category filter with subcategories ---
+        category_slugs = request.query_params.get("category")
+        selected_category_ids = []
+        all_category_ids = []
+
+        if category_slugs:
+            slugs = [slug.strip() for slug in category_slugs.split(",") if slug.strip()]
+            # Get selected categories
+            categories = Category.objects.filter(slug__in=slugs, is_active=True)
+            selected_category_ids = list(categories.values_list('id', flat=True))
+            all_category_ids.extend(selected_category_ids)
+
+            # Include all subcategories recursively
+            def get_subcategory_ids(cat_queryset):
+                sub_ids = []
+                for cat in cat_queryset:
+                    children = cat.children.filter(is_active=True)
+                    if children.exists():
+                        child_ids = list(children.values_list('id', flat=True))
+                        sub_ids.extend(child_ids)
+                        sub_ids.extend(get_subcategory_ids(children))
+                return sub_ids
+
+            subcategory_ids = get_subcategory_ids(categories)
+            all_category_ids.extend(subcategory_ids)
+
+            # Filter products by all category IDs (parent + children)
+            queryset = queryset.filter(category__id__in=all_category_ids)
+
+        # --- Variant IDs for filtering attributes ---
+        product_variant_ids = list(
+            ProductVariant.objects.filter(product__in=queryset, is_active=True).values_list('id', flat=True)
+        )
+
+        # --- Brands metadata ---
+        brands_qs = Brand.objects.filter(products__in=queryset, is_active=True)\
+            .annotate(product_count=Count("products", distinct=True))\
+            .order_by("name")
+    
+        brands = []
+        for b in brands_qs:
+            logo_url = b.logo.url if b.logo else None
+            if logo_url and not logo_url.startswith("http"):
+                logo_url = request.build_absolute_uri(logo_url)
+            brands.append({
+                "name": b.name,
+                "slug": b.slug,
+                "product_count": b.product_count,
+                "logo": logo_url,
+            })
+    
+
+
+        # --- Attributes + values metadata ---
+        attributes = VariantAttribute.objects.prefetch_related("values").all()
+        attribute_data = []
+        for attr in attributes:
+            values = (
+                attr.values.filter(
+                    productvariantattributevalue__variant_id__in=product_variant_ids
+                )
+                .annotate(count=Count("productvariantattributevalue__variant_id", distinct=True))
+                .values("value", "id", "count", "color_code")
+                .order_by("value")
+            )
+            attribute_data.append({
+                "name": attr.name,
+                "slug": attr.name.lower().replace(" ", "_"),
+                "values": list(values)
+            })
+            
+        # --- Ratings metadata from ProductReview ---
+        ratings = []
+        for star in range(1, 6):
+            count = ProductReview.objects.filter(
+                product__in=queryset,
+                rating=star
+            ).count()
+            ratings.append({"rating": star, "count": count})
+
+        # --- Only return subcategories, not the parent/selected category ---
+        subcategories = Category.objects.filter(id__in=subcategory_ids).values("name", "slug", "parent_id")
+
+        return Response({
+            "brands": list(brands),
+            "attributes": attribute_data,
+            "categories": list(subcategories),
+            "ratings": ratings[::-1],
+        })
+
+        
+        
+    @action(detail=False, methods=["get"], url_path="best_seller")
     def best_seller(self, request):
         """Get dynamically calculated best seller products with pagination"""
 
-        # Get optional limit from query params (used for pre-limit to reduce DB load)
+        # Optional pre-limit (for performance)
         try:
-            limit = int(request.query_params.get("limit", 50))  # default pre-limit
+            limit = int(request.query_params.get("limit", 10))
         except ValueError:
-            limit = 50
+            limit = 10
 
-        # Annotate products with total sold quantity
+        category_slug = request.query_params.get("category")
+
+        queryset = self.get_queryset()
+
+        # 🔹 Filter by category slug if provided
+        if category_slug:
+            queryset = queryset.filter(category__slug=category_slug)
+
+        # 🔹 Annotate total sold quantity
         queryset = (
-            self.get_queryset()
+            queryset
             .annotate(total_sold=Sum("variants__sold_quantity"))
-            .order_by("-total_sold")[:limit]  # pre-limit for performance
+            .order_by("-total_sold")[:limit]
         )
 
-        # Paginate the queryset
+        # 🔹 Pagination
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        # If pagination is not applied, serialize the whole queryset
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-
+    
+     
     @action(detail=True, methods=["get"])
     def related(self, request, slug=None):
         """Get related products for a product (by category and brand)

@@ -64,18 +64,19 @@ class VartientAttributeValueInlineForm(VariantAttributeValueForm):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name', 'parent', 'image_preview', 'is_active', 'action_buttons']
+    list_display = ['name', 'parent', 'image_preview', 'is_active','is_featured', 'action_buttons']
     list_display_links = ['name']
-    list_editable = ['is_active']
+    list_editable = ['is_active','is_featured',]
     list_filter = ['is_active', 'created_at']
     search_fields = ['name']
     prepopulated_fields = {'slug': ('name',)}
+    exclude = ['is_active','is_featured',] # this removes it from the form
 
     def image_preview(self, obj):
         if obj.image:
             return format_html(
                 '<img src="{}" width="50" height="50" style="object-fit:contain;" />',
-                obj.image.url
+                obj.image
             )
         return '-'
     image_preview.short_description = 'Image'
@@ -95,12 +96,15 @@ class CategoryAdmin(admin.ModelAdmin):
     
 @admin.register(Brand)
 class BrandAdmin(admin.ModelAdmin):
-    list_display = ['name', 'logo_preview', 'is_featured', 'is_active', 'action_buttons']
+    list_display = ['name', 'logo_preview', 'is_active','is_featured', 'action_buttons']
     list_display_links = ['name']
-    list_editable = ['is_active']
+    list_editable = ['is_active','is_featured',]
     list_filter = ['is_active', 'created_at']
     search_fields = ['name']
     prepopulated_fields = {'slug': ('name',)}
+    # Hide is_featured from the add/edit form
+    exclude = ['is_active','is_featured',] # this removes it from the form
+    
 
     def logo_preview(self, obj):
         if obj.logo:
@@ -121,6 +125,22 @@ class BrandAdmin(admin.ModelAdmin):
     action_buttons.short_description = 'Actions'
     
 class ProductImageInline(nested_admin.NestedTabularInline):
+    model = ProductImage
+    fk_name = "product"   
+    extra = 1
+
+    fields = ['image', 'image_preview', 'alt_text', 'is_primary', 'order']
+    readonly_fields = ['image_preview']
+
+    def image_preview(self, obj):
+        if obj.pk and obj.image:
+            return format_html(
+                '<img src="{}" style="max-width:100px; max-height:100px; object-fit:contain;" />',
+                obj.image.url
+            )
+        return "No image"
+    
+class ProductImageInlineNoNestedProduct(admin.TabularInline):
     model = ProductImage
     fk_name = "product"   
     extra = 1
@@ -184,7 +204,7 @@ class ProductVariantAttributeValueInlineNoNested(admin.TabularInline):
 class ProductVariantInline(nested_admin.NestedStackedInline):
     model = ProductVariant
     fk_name = 'product'  # This tells Django which FK to use
-    extra = 1  # Show 1 empty form for adding new variant
+    extra = 0  # Show 1 empty form for adding new variant
     fields = [
         'sku',
         'selling_price',
@@ -234,7 +254,7 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
     
     def is_new(self, obj):
         return obj.is_new
-    is_new.boolean = True
+    # is_new.boolean = True
     is_new.short_description = "New?"
     
     def variant_attributes(self, obj):

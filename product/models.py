@@ -9,6 +9,8 @@ import random
 import string
 from django.db.models import Avg, Count
 from django.core.exceptions import ValidationError
+from filehub.fields import FilePickerField,ImagePickerField
+
 
 
 class Category(models.Model):
@@ -17,7 +19,7 @@ class Category(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     description = HTMLField(blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, related_name='children')
-    image = models.ImageField(upload_to='categories/', blank=True, null=True)
+    image = ImagePickerField(blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -25,7 +27,7 @@ class Category(models.Model):
 
     class Meta:
         verbose_name = "Category"
-        verbose_name_plural = "Categories"
+        verbose_name_plural = "Category"
         ordering = ['name']
 
     def __str__(self):
@@ -100,7 +102,7 @@ class Product(models.Model):
 
     class Meta:
         verbose_name = "Product"
-        verbose_name_plural = "Products"
+        verbose_name_plural = "Product"
         ordering = ['-created_at']
 
     def __str__(self):
@@ -207,7 +209,7 @@ class ProductVariant(models.Model):
 
     class Meta:
         verbose_name = "Product Variant"
-        verbose_name_plural = "Product Variants"
+        verbose_name_plural = "Product Variant"
         ordering = ['product', '-is_default', 'selling_price']
 
     def __str__(self):
@@ -282,7 +284,7 @@ class ProductVariantAttributeValue(models.Model):
 
     class Meta:
         verbose_name = "Variant Attribute Mapping"
-        verbose_name_plural = "Variant Attribute Mappings"
+        verbose_name_plural = "Variant Attribute Mapping"
         unique_together = ('variant', 'attribute_value')
 
     def __str__(self):
@@ -309,7 +311,7 @@ class ProductImage(models.Model):
 
     class Meta:
         verbose_name = "Product Image"
-        verbose_name_plural = "Product Images"
+        verbose_name_plural = "Product Image"
         ordering = ['order', 'created_at']
 
     def __str__(self):
@@ -505,7 +507,7 @@ class Deal(models.Model):
 
     class Meta:
         verbose_name = "Deal"
-        verbose_name_plural = "Deals"
+        verbose_name_plural = "Deal"
         db_table = 'deals'
         ordering = ['-is_featured', 'display_order', '-created_at']
         indexes = [
@@ -702,7 +704,7 @@ class RecentlyViewedProduct(models.Model):
 
     class Meta:
         verbose_name = "Recently Viewed Product"
-        verbose_name_plural = "Recently Viewed Products"
+        verbose_name_plural = "Recently Viewed Product"
         ordering = ['-viewed_at']
         unique_together = ('user', 'product')  # ensures one entry per user-product
 

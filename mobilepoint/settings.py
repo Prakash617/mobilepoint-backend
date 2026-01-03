@@ -44,6 +44,8 @@ INSTALLED_APPS = [
     "nested_admin",
 ]
 
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 # REST Framework Configuration
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -421,6 +423,7 @@ DASHUB_SETTINGS = {
         "orders.orderitem": "hgi hgi-stroke hgi-list-view",
 
         "wishlist.wishlist": "hgi hgi-stroke hgi-favourite",
+        "reviews.productreview": "hgi hgi-stroke hgi-star-square",
 
         "website.carousel": "hgi hgi-stroke hgi-carousel-horizontal",
         "website.advertisement": "hgi hgi-stroke hgi-advertisiment",
@@ -505,7 +508,7 @@ DASHUB_SETTINGS = {
         "tools": [
             {
                 "name": "File Manager",
-                "url": "/admin/filemanager/",
+                "url": "/filehub/",
                 "icon": "fa-solid fa-folder",
                 "order": 1,
             }
@@ -531,7 +534,8 @@ TINYMCE_DEFAULT_CONFIG = {
     "external_filemanager_path": "/filehub/select/",
     "filemanager_title": "Filemanager",
     "external_plugins": {
-        "filehub": "/static/filehub/tinymce/plugin.js",
+        # "filehub": "/static/filehub/tinymce/plugin.js",
+        "filehub": "/static/filehub/tinymce/plugin.min.js",
         "questionshortcode": "/static/admin/tinymce/questionshortcode/plugin.js",
     },
     "relative_urls": False,

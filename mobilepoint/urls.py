@@ -30,9 +30,8 @@ from product.api_views import ProductViewSet
 router = DefaultRouter()
 
 urlpatterns = [
+    path('', include('filehub.urls')),
     path('admin/', admin.site.urls),
-    path('admin/', include('filehub.urls')),
-    path('admin/', include('filehub.urls')),
     path('product/', include('product.api_urls')),
     # Direct route for frontend-friendly related products URL
     path('products/<slug:slug>/related/', ProductViewSet.as_view({'get': 'related'}), name='product-related'),

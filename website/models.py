@@ -3,6 +3,8 @@ from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from product.models import Product, Category
+from filehub.fields import FilePickerField
+
 
 
 class Carousel(models.Model):
@@ -31,7 +33,7 @@ class Carousel(models.Model):
             models.Index(fields=['order']),
         ]
         verbose_name = "Carousel"
-        verbose_name_plural = "Carousels"
+        verbose_name_plural = "Carousel"
 
     def __str__(self):
         return f"{self.title} - {self.get_position_display()}"
@@ -42,12 +44,13 @@ class CarouselSlide(models.Model):
     title = models.CharField(max_length=200)
     subtitle = models.CharField(max_length=300, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
-    image = models.ImageField(upload_to='carousel/slides/')
-    mobile_image = models.ImageField(upload_to='carousel/slides/mobile/', blank=True, null=True)
+    # image = models.ImageField(upload_to='carousel/slides/',blank = True, null = True)
+    image = FilePickerField(blank = True, null = True)
+    # mobile_image = models.ImageField(upload_to='carousel/slides/mobile/', blank=True, null=True)
 
     link_url = models.URLField(blank=True, null=True)
     link_text = models.CharField(max_length=100, blank=True, null=True)
-    open_in_new_tab = models.BooleanField(default=False)
+    # open_in_new_tab = models.BooleanField(default=False)
 
     product = models.ForeignKey('product.Product', on_delete=models.SET_NULL, blank=True, null=True)
 
@@ -58,7 +61,7 @@ class CarouselSlide(models.Model):
     class Meta:
         ordering = ['order', '-created_at']
         verbose_name = "Carousel Slide"
-        verbose_name_plural = "Carousel Slides"
+        verbose_name_plural = "Carousel Slide"
 
     def __str__(self):
         return f"{self.carousel.title} - {self.title}"
@@ -120,7 +123,7 @@ class Advertisement(models.Model):
             models.Index(fields=['start_date', 'end_date']),
         ]
         verbose_name = "Advertisement"
-        verbose_name_plural = "Advertisements"
+        verbose_name_plural = "Advertisement"
 
     def __str__(self):
         return f"{self.title} - {self.get_position_display()}"
@@ -156,7 +159,7 @@ class NewsletterSubscriber(models.Model):
     class Meta:
         ordering = ['-subscribed_at']
         verbose_name = "Newsletter Subscriber"
-        verbose_name_plural = "Newsletter Subscribers"
+        verbose_name_plural = "Newsletter Subscriber"
 
     def __str__(self):
         return self.email
@@ -179,7 +182,7 @@ class ContactMessage(models.Model):
     class Meta:
         ordering = ['-created_at']
         verbose_name = "Contact Message"
-        verbose_name_plural = "Contact Messages"
+        verbose_name_plural = "Contact Message"
 
     def __str__(self):
         return f"{self.name} - {self.subject}"
@@ -213,8 +216,8 @@ class SiteSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Site Settings"
-        verbose_name_plural = "Site Settings"
+        verbose_name = "Site Setting"
+        verbose_name_plural = "Site Setting"
 
     def __str__(self):
         return self.site_name
@@ -236,7 +239,7 @@ class CuratedItem(models.Model):
     class Meta:
         ordering = ["position", "-created_at"]
         verbose_name = "Curated Item"
-        verbose_name_plural = "Curated Items"
+        verbose_name_plural = "Curated Item"
 
     def __str__(self):
         return self.title

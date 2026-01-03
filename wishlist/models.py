@@ -12,7 +12,7 @@ class Wishlist(models.Model):
 
     class Meta:
         verbose_name = "Wishlist"
-        verbose_name_plural = "Wishlists"
+        verbose_name_plural = "Wishlist"
 
     def __str__(self):
         return f"{self.user.username}'s Wishlist"
@@ -40,7 +40,7 @@ class WishlistItem(models.Model):
             models.Index(fields=['product_variant']),
         ]
         verbose_name = "Wishlist Item"
-        verbose_name_plural = "Wishlist Items"
+        verbose_name_plural = "Wishlist Item"
 
     def __str__(self):
         return f"{self.wishlist.user.username} - {self.product_variant}"

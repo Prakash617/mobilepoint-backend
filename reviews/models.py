@@ -28,7 +28,7 @@ class ProductReview(models.Model):
 
     class Meta:
         verbose_name = "Product Review"
-        verbose_name_plural = "Product Reviews"
+        verbose_name_plural = "Product Review"
         ordering = ['-created_at']
         unique_together = ('product', 'user')
         

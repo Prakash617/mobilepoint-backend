@@ -36,8 +36,8 @@ media/
 local_settings.py
 
 # Migrations (optional – keep if you want)
-# **/migrations/*.py
-# **/migrations/__pycache__/
+**/migrations/*.py
+**/migrations/__pycache__/
 
 # ======================
 # Django Cache

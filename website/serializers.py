@@ -11,8 +11,8 @@ class CarouselSlideSerializer(serializers.ModelSerializer):
     class Meta:
         model = CarouselSlide
         fields = [
-            'id', 'title', 'subtitle', 'description', 'image', 'mobile_image',
-            'link_url', 'link_text', 'open_in_new_tab', 'product', 'order', 'is_active'
+            'id', 'title', 'subtitle', 'description', 'image',
+            'link_url', 'link_text', 'product', 'order', 'is_active'
         ]
 
 

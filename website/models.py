@@ -8,9 +8,9 @@ from product.models import Product, Category
 class Carousel(models.Model):
     POSITION_CHOICES = [
         ('home_main', 'Home Main Carousel'),
-        ('home_secondary', 'Home Secondary Carousel'),
-        ('category', 'Category Page Carousel'),
-        ('product', 'Product Page Carousel'),
+        # ('home_secondary', 'Home Secondary Carousel'),
+        # ('category', 'Category Page Carousel'),
+        # ('product', 'Product Page Carousel'),
     ]
 
     title = models.CharField(max_length=200)
@@ -92,9 +92,9 @@ class Advertisement(models.Model):
     position = models.CharField(max_length=50, choices=POSITION_CHOICES)
 
     image = models.ImageField(upload_to='ads/', blank=True, null=True)
-    mobile_image = models.ImageField(upload_to='ads/mobile/', blank=True, null=True)
-    video_url = models.URLField(blank=True, null=True)
-    html_content = models.TextField(blank=True, null=True, help_text='Custom HTML/JS code')
+    # mobile_image = models.ImageField(upload_to='ads/mobile/', blank=True, null=True)
+    # video_url = models.URLField(blank=True, null=True)
+    # html_content = models.TextField(blank=True, null=True, help_text='Custom HTML/JS code')
 
     link_url = models.URLField(blank=True, null=True)
     open_in_new_tab = models.BooleanField(default=True)
@@ -103,8 +103,8 @@ class Advertisement(models.Model):
     start_date = models.DateTimeField(default=timezone.now)
     end_date = models.DateTimeField(blank=True, null=True)
 
-    show_on_mobile = models.BooleanField(default=True)
-    show_on_desktop = models.BooleanField(default=True)
+    # show_on_mobile = models.BooleanField(default=True)
+    # show_on_desktop = models.BooleanField(default=True)
     max_impressions = models.IntegerField(blank=True, null=True)
     current_impressions = models.IntegerField(default=0)
     click_count = models.IntegerField(default=0)

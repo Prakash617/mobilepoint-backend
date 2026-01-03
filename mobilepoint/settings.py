@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     "wishlist",
     "website",
     "reviews",
+    "nested_admin",
 ]
 
 # REST Framework Configuration
@@ -454,8 +455,8 @@ DASHUB_SETTINGS = {
                 "submenu": [
                     {"model": "product.variantattribute", "order": 1},
                     {"model": "product.variantattributevalue", "order": 2},
-                    {"model": "product.productvariant", "order": 3},
-                    {"model": "product.productvariantattributevalue", "order": 4},
+                    # {"model": "product.productvariant", "order": 3},
+                    # {"model": "product.productvariantattributevalue", "order": 4},
                 ],
             },
             {
@@ -477,7 +478,7 @@ DASHUB_SETTINGS = {
                 "url": "/admin/website/content/",
                 "submenu": [
                     {"model": "website.carousel", "order": 1},
-                    {"model": "website.carouselslide", "order": 2},
+                    # {"model": "website.carouselslide", "order": 2},
                     {"model": "website.advertisement", "order": 3},
                     {"model": "website.curateditem", "order": 4},
                 ],

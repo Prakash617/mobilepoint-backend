@@ -6,6 +6,7 @@ from .models import (
     NewsletterSubscriber, ContactMessage, SiteSettings,CuratedItem
 )
 from django.utils.html import format_html
+from django.urls import reverse
 from django.core.exceptions import ValidationError
 
 
@@ -43,42 +44,72 @@ class CarouselSlideInline(admin.StackedInline):
 
 @admin.register(Carousel)
 class CarouselAdmin(admin.ModelAdmin):
-    list_display = ['title', 'position', 'is_active', 'auto_play', 'order', 'created_at']
+    list_display = ['title', 'position', 'is_active', 'auto_play', 'order', 'created_at', 'action_buttons']
     list_filter = ['position', 'is_active', 'auto_play']
     search_fields = ['title']
     inlines = [CarouselSlideInline]
+    
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:website_carousel_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
 
 
 @admin.register(Advertisement)
 class AdvertisementAdmin(admin.ModelAdmin):
-    list_display = ['title', 'ad_type', 'position', 'is_active', 'current_impressions', 'click_count', 'get_ctr']
+    list_display = [
+        'title',
+        'ad_type',
+        'position',
+        'is_active',
+        'current_impressions',
+        'click_count',
+        'ctr_display',
+        'action_buttons',
+    ]
     list_filter = ['ad_type', 'position', 'is_active', 'start_date']
     search_fields = ['title']
-    readonly_fields = ['current_impressions', 'click_count']
-    
+    readonly_fields = ['current_impressions', 'click_count', 'created_at', 'updated_at']
+
     fieldsets = (
         ('Basic Information', {
-            'fields': ('title', 'ad_type', 'position')
+            'fields': ('title', 'ad_type', 'position','image','link_url', 'order')
         }),
-        ('Media', {
-            'fields': ('image', 'mobile_image', 'video_url', 'html_content')
-        }),
-        ('Link', {
-            'fields': ('link_url', 'open_in_new_tab')
-        }),
+        # ('Media', {
+        #     'fields': ('image',)
+        # }),
+        # ('Link', {
+        #     'fields': ('link_url', 'open_in_new_tab')
+        # }),
         ('Display Settings', {
-            'fields': ('is_active', 'start_date', 'end_date', 'show_on_mobile', 'show_on_desktop')
+            'fields': ('is_active', 'start_date', 'end_date')
         }),
         ('Analytics', {
-            'fields': ('max_impressions', 'current_impressions', 'click_count', 'order')
+            'fields': ('max_impressions', 'current_impressions', 'click_count')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at')
         }),
     )
-    
-    def get_ctr(self, obj):
+
+    def ctr_display(self, obj):
         if obj.current_impressions > 0:
-            return f"{(obj.click_count / obj.current_impressions * 100):.2f}%"
+            return f"{(obj.click_count / obj.current_impressions) * 100:.2f}%"
         return "0%"
-    get_ctr.short_description = 'CTR'
+    ctr_display.short_description = "CTR"
+    
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:website_advertisement_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
 
 
 # @admin.register(Banner)
@@ -104,17 +135,35 @@ class AdvertisementAdmin(admin.ModelAdmin):
 
 @admin.register(NewsletterSubscriber)
 class NewsletterSubscriberAdmin(admin.ModelAdmin):
-    list_display = ['email', 'name', 'is_active', 'subscribed_at']
+    list_display = ['email', 'name', 'is_active', 'subscribed_at', 'action_buttons']
     list_filter = ['is_active', 'subscribed_at']
     search_fields = ['email', 'name']
+    
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:website_newslettersubscriber_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
 
 
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'subject', 'is_read', 'replied', 'created_at']
+    list_display = ['name', 'email', 'subject', 'is_read', 'replied', 'created_at', 'action_buttons']
     list_filter = ['is_read', 'replied', 'created_at']
     search_fields = ['name', 'email', 'subject', 'message']
     readonly_fields = ['created_at']
+    
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:website_contactmessage_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
 
 
 @admin.register(SiteSettings)
@@ -138,6 +187,13 @@ class SiteSettingsAdmin(admin.ModelAdmin):
             'fields': ('meta_title', 'meta_description', 'meta_keywords')
         }),
     )
+    # ❌ Disable adding more than one object
+    def has_add_permission(self, request):
+        return not SiteSettings.objects.exists()
+
+    # (optional but recommended)
+    def has_delete_permission(self, request, obj=None):
+        return False
     
 @admin.register(CuratedItem)
 class CuratedItemAdmin(admin.ModelAdmin):
@@ -149,6 +205,7 @@ class CuratedItemAdmin(admin.ModelAdmin):
         "is_active",
         "image_preview",
         "created_at",
+        "action_buttons",
     )
 
     list_editable = ("position", "is_active")
@@ -202,6 +259,15 @@ class CuratedItemAdmin(admin.ModelAdmin):
         return "Custom Link"
 
     linked_to.short_description = "Linked To"
+    
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:website_curateditem_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
 
     # ---------- Validation ----------
 

@@ -8,6 +8,7 @@ from datetime import timedelta
 import random
 import string
 from django.db.models import Avg, Count
+from django.core.exceptions import ValidationError
 
 
 class Category(models.Model):
@@ -15,7 +16,7 @@ class Category(models.Model):
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     description = HTMLField(blank=True, null=True)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='children')
+    parent = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, related_name='children')
     image = models.ImageField(upload_to='categories/', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -28,11 +29,17 @@ class Category(models.Model):
         ordering = ['name']
 
     def __str__(self):
+        
         return self.name
 
 
 class Brand(models.Model):
     """Electronics brands like Apple, Samsung, etc."""
+    category = models.ManyToManyField(
+        Category,
+        related_name='brands',
+        blank=True
+    )    
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
     logo = models.ImageField(upload_to='brands/', blank=True, null=True)
@@ -63,7 +70,7 @@ class Product(models.Model):
     base_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Product specifications
-    specifications = models.JSONField(default=dict, blank=True)  # e.g., {"processor": "Snapdragon 888", "screen": "6.5 inch"}
+    specifications = HTMLField(blank=True, null=True)  # e.g., {"processor": "Snapdragon 888", "screen": "6.5 inch"}
     
     # SEO fields
     meta_title = models.CharField(max_length=200, blank=True)
@@ -116,8 +123,8 @@ class VariantAttribute(models.Model):
     display_name = models.CharField(max_length=100)  # e.g., "Choose Color"
     
     class Meta:
-        verbose_name = "Variant Attribute"
-        verbose_name_plural = "Variant Attributes"
+        verbose_name = "Variant "
+        verbose_name_plural = "Variant"
         ordering = ['name']
 
     def __str__(self):
@@ -125,23 +132,55 @@ class VariantAttribute(models.Model):
 
 
 class VariantAttributeValue(models.Model):
+    TYPE_CHOICES = [
+        ("text", "Text"),
+        ("color", "Color"),
+        ("image", "Image"),
+    ]
     """Values for variant attributes like Red, Blue, 8GB, 16GB, etc."""
     attribute = models.ForeignKey(VariantAttribute, on_delete=models.CASCADE, related_name='values')
-    value = models.CharField(max_length=100)  # e.g., "Red", "8GB", "256GB"
+    types = models.CharField(
+        max_length=10,
+        choices=TYPE_CHOICES,
+        default="text"
+    )
+    value = models.CharField(max_length=100, blank=True, null=True)  # e.g., "Red", "8GB", "256GB"
     
     # Optional: for color swatches or icons
-    color_code = models.CharField(max_length=7, blank=True, null=True)  # e.g., "#FF0000" for red
+    color_code = models.CharField(
+        max_length=7, 
+        blank=True, 
+        null=True,
+        help_text="Enter color code in hex format (e.g., #FF0000)"
+    )  # e.g., "#FF0000" for red
     image = models.ImageField(upload_to='variant_images/', blank=True, null=True)
     
     class Meta:
-        verbose_name = "Variant Attribute Value"
-        verbose_name_plural = "Variant Attribute Values"
+        verbose_name = " Attribute"
+        verbose_name_plural = " Attribute"
         unique_together = ('attribute', 'value')
         ordering = ['attribute', 'value']
 
     def __str__(self):
-        return f"{self.attribute.name}: {self.value}"
+        return f"{self.attribute.name}: {self.value or self.color_code or self.image}"
 
+    def clean(self):
+        super().clean()
+        if self.types == 'text':
+            if not self.value:
+                raise ValidationError({'value': 'This field is required when type is "Text".'})
+            self.color_code = None
+            self.image = None
+        elif self.types == 'color':
+            if not self.color_code:
+                raise ValidationError({'color_code': 'This field is required when type is "Color".'})
+            self.value = None
+            self.image = None
+        elif self.types == 'image':
+            if not self.image:
+                raise ValidationError({'image': 'This field is required when type is "Image".'})
+            self.value = None
+            self.color_code = None
 
 class ProductVariant(models.Model):
     """Actual product variants with specific attribute combinations"""
@@ -149,9 +188,9 @@ class ProductVariant(models.Model):
     sku = models.CharField(max_length=100, unique=True , blank=True)
     
     # Pricing
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    compare_at_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Original price for discounts
-    cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    selling_price = models.DecimalField(max_digits=10, decimal_places=2)
+    regular_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Original price for discounts
+    # cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Inventory
     stock_quantity = models.PositiveIntegerField(default=0)
@@ -169,7 +208,7 @@ class ProductVariant(models.Model):
     class Meta:
         verbose_name = "Product Variant"
         verbose_name_plural = "Product Variants"
-        ordering = ['product', '-is_default', 'price']
+        ordering = ['product', '-is_default', 'selling_price']
 
     def __str__(self):
         attributes = ", ".join([f"{va.attribute.name}: {va.value}" for va in self.attribute_values.all()])
@@ -309,7 +348,7 @@ class ProductPromotion(models.Model):
     promotion_type = models.CharField(max_length=20, choices=PROMOTION_TYPE)
     title = models.CharField(max_length=100)
     description = HTMLField(blank=True)
-    icon = models.CharField(max_length=50, blank=True)  # Icon class or emoji
+    # icon = models.CharField(max_length=50, blank=True)  # Icon class or emoji
     start_date = models.DateTimeField()
     end_date = models.DateTimeField()
     is_active = models.BooleanField(default=True)

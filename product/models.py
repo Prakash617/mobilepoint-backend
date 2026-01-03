@@ -9,7 +9,6 @@ import random
 import string
 from django.db.models import Avg, Count
 from django.core.exceptions import ValidationError
-from filehub.fields import FilePickerField,ImagePickerField
 
 
 
@@ -19,7 +18,7 @@ class Category(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     description = HTMLField(blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, related_name='children')
-    image = ImagePickerField(blank=True, null=True)
+    image = models.ImageField(upload_to='categories/', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)

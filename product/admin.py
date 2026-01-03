@@ -76,7 +76,7 @@ class CategoryAdmin(admin.ModelAdmin):
         if obj.image:
             return format_html(
                 '<img src="{}" width="50" height="50" style="object-fit:contain;" />',
-                obj.image
+                obj.image.url
             )
         return '-'
     image_preview.short_description = 'Image'
@@ -135,7 +135,7 @@ class ProductImageInline(nested_admin.NestedTabularInline):
     def image_preview(self, obj):
         if obj.pk and obj.image:
             return format_html(
-                '<img src="{}" style="max-width:100px; max-height:100px; object-fit:contain;" />',
+        '<img src="{}" style="max-width:100px; max-height:100px; object-fit:contain;" />',
                 obj.image.url
             )
         return "No image"
@@ -230,7 +230,9 @@ from django.urls import reverse
 
 @admin.register(Product)
 class ProductAdmin(nested_admin.NestedModelAdmin):
-    list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 'is_new', 'is_featured', 'variant_attributes', 'action_buttons']
+    list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 
+                    # 'is_new', 
+                    'is_featured', 'variant_attributes', 'action_buttons']
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
@@ -252,10 +254,10 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         }),
     )
     
-    def is_new(self, obj):
-        return obj.is_new
-    # is_new.boolean = True
-    is_new.short_description = "New?"
+    # def is_new(self, obj):
+    #     return obj.is_new
+    # # is_new.boolean = True
+    # is_new.short_description = "New?"
     
     def variant_attributes(self, obj):
         variants = obj.variants.all()  # all variants for this product

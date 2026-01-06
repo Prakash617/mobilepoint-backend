@@ -470,6 +470,7 @@ DASHUB_SETTINGS = {
                     {"model": "product.productpromotion", "order": 1},
                     {"model": "product.deal", "order": 2},
                     {"model": "product.frequentlyboughttogether", "order": 3},
+                    {"model": "product.frequentlyboughttogether", "order": 3},
                 ],
             },
         ],

@@ -229,7 +229,9 @@ from django.urls import reverse
 @admin.register(Product)
 class ProductAdmin(nested_admin.NestedModelAdmin):
     list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 
-                    'is_featured', 'variant_attributes', 'action_buttons']
+                    'is_featured', 
+                    'variant_attributes', 
+                    'action_buttons']
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
@@ -251,8 +253,8 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         }),
     )
     
-    class Media:
-        js = ('admin/js/product_brand_category.js',)
+    # class Media:
+    #     js = ('admin/js/product_brand_category.js',)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -671,3 +673,35 @@ class RecentlyViewedProductAdmin(admin.ModelAdmin):
             edit_url
         )
     action_buttons.short_description = 'Actions'
+    
+    
+@admin.register(FrequentlyBoughtTogether)
+class FrequentlyBoughtTogetherAdmin(admin.ModelAdmin):
+    list_display = (
+        'main_product',
+        'related_product',
+        'display_order',
+        'discount_percentage',
+        'is_active',
+        'total_price_display'
+    )
+    list_filter = ('is_active',)
+    search_fields = (
+        'main_product__name',
+        'related_product__name',
+    )
+    ordering = ('display_order',)
+    
+    # Make total_price read-only in admin
+    readonly_fields = ('total_price_display',)
+    
+    def total_price_display(self, obj):
+        return obj.total_price
+    total_price_display.short_description = "Total Price"
+    
+    # Optional: Disable adding duplicates of main+related product combination
+    def has_add_permission(self, request):
+        return True  # You can return False if you want to completely disable add
+    
+    def has_change_permission(self, request, obj=None):
+        return True  # Keep True to allow editing

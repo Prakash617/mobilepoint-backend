@@ -68,7 +68,9 @@ class Product(models.Model):
     brand = models.ForeignKey(
         Brand,
         on_delete=models.PROTECT,
-        related_name='products'
+        related_name='products',
+        default=1  # ID of a valid brand
+
     )    
     # Base price (optional, can be overridden by variants)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)

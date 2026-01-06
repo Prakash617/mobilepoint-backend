@@ -3,6 +3,7 @@
 from django.urls import path, include
 from mobilepoint.urls import router
 from .api_views import CategoryViewSet, BrandViewSet, ProductViewSet, ProductVariantViewSet,DealViewSet ,RecentlyViewedProductViewSet
+from .views import get_categories_by_brand
 
 
 router.register(r'categories', CategoryViewSet, basename='category')
@@ -18,4 +19,5 @@ app_name = 'product'
 urlpatterns = [
     # API endpoints
     path('', include(router.urls)),
+    path('filter-categories/', get_categories_by_brand, name='get_categories_by_brand'),
 ]

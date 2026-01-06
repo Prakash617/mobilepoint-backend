@@ -400,7 +400,7 @@ DASHUB_SETTINGS = {
         "website.contactmessage": 6,
         "website.sitesettings": 7,
     },
-
+    
     # --------------------------------------------------
     # Icons
     # --------------------------------------------------
@@ -456,10 +456,10 @@ DASHUB_SETTINGS = {
                 "icon": "hgi hgi-stroke hgi-layers-01",
                 "url": "/admin/product/variants/",
                 "submenu": [
-                    {"model": "product.variantattribute", "order": 1},
-                    {"model": "product.variantattributevalue", "order": 2},
-                    # {"model": "product.productvariant", "order": 3},
-                    # {"model": "product.productvariantattributevalue", "order": 4},
+                    
+                    {"name": "Add Variant", "url": "/admin/product/variantattribute/add/#general-tab", "order": 1},
+                    {"name": "Variant List","url": "/admin/product/variantattribute/", "order": 2},
+                
                 ],
             },
             {

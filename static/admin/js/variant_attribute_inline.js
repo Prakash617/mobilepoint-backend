@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    
+
     function setupRow(row) {
         const typeSelect = row.querySelector('select[name$="-types"]');
         if (!typeSelect) return;
@@ -8,132 +8,95 @@ document.addEventListener('DOMContentLoaded', function () {
         const colorCell = row.querySelector('td.field-color_code');
         const imageCell = row.querySelector('td.field-image');
 
-        console.log('Setup row:', row.id, {valueCell, colorCell, imageCell});
+        const table = row.closest('table');
+        const thValue = table.querySelector('th.column-value');
+        const thColor = table.querySelector('th.column-color_code');
+        const thImage = table.querySelector('th.column-image');
 
         function toggle() {
             const type = typeSelect.value;
-            
-            console.log('Toggle called with type:', type, 'Row:', row.id);
 
             // Hide all cells first
-            if (valueCell) {
-                valueCell.style.display = 'none';
-                console.log('Hidden value cell');
-            }
-            if (colorCell) {
-                colorCell.style.display = 'none';
-                console.log('Hidden color cell');
-            }
-            if (imageCell) {
-                imageCell.style.display = 'none';
-                console.log('Hidden image cell');
-            }
+            if (valueCell) valueCell.style.display = 'none';
+            if (colorCell) colorCell.style.display = 'none';
+            if (imageCell) imageCell.style.display = 'none';
 
-            // Show the relevant cell based on type
+            // Hide all headers first
+            thValue.style.display = 'none';
+            thColor.style.display = 'none';
+            thImage.style.display = 'none';
+
+            // Show only relevant cell and header
             if (type === 'text') {
-                if (valueCell) {
-                    valueCell.style.display = 'table-cell';
-                    console.log('Showing value cell for text');
-                }
+                if (valueCell) valueCell.style.display = 'table-cell';
+                if (thValue) thValue.style.display = 'table-cell';
             } else if (type === 'color') {
-                if (colorCell) {
-                    colorCell.style.display = 'table-cell';
-                    console.log('Showing color cell for color');
-                }
+                if (colorCell) colorCell.style.display = 'table-cell';
+                if (thColor) thColor.style.display = 'table-cell';
             } else if (type === 'image') {
-                if (imageCell) {
-                    imageCell.style.display = 'table-cell';
-                    console.log('Showing image cell for image');
-                }
+                if (imageCell) imageCell.style.display = 'table-cell';
+                if (thImage) thImage.style.display = 'table-cell';
             }
         }
 
         // Initial toggle
         toggle();
 
-        // Listen to native change event
-        typeSelect.addEventListener('change', function(e) {
-            console.log('Native change event fired, value:', typeSelect.value);
-            toggle();
-        });
+        // Native change event
+        typeSelect.addEventListener('change', toggle);
 
-        // Listen to Select2 change events
+        // Select2 events
         if (window.$ && window.$.fn.select2) {
-            $(typeSelect).on('select2:select', function(e) {
-                console.log('Select2 change event fired, value:', typeSelect.value);
-                setTimeout(toggle, 50);
-            });
-            
-            $(typeSelect).on('select2:unselect', function(e) {
-                console.log('Select2 unselect event fired, value:', typeSelect.value);
+            $(typeSelect).on('select2:select select2:unselect', function () {
                 setTimeout(toggle, 50);
             });
         }
     }
 
     function initAll() {
-        console.log('Initializing all rows');
         const rows = document.querySelectorAll('tr.form-row.dynamic-values, tr.form-row.has_original.dynamic-values');
-        console.log('Found rows:', rows.length);
         rows.forEach(setupRow);
     }
 
-    // Wait for Select2 to be initialized, then init rows
     function waitForSelect2AndInit() {
         const tableContainer = document.querySelector('fieldset[data-select2-id]');
         if (tableContainer && window.$) {
-            // Check if Select2 is initialized
             const select2Elements = tableContainer.querySelectorAll('.select2-container');
             if (select2Elements.length > 0) {
-                console.log('Select2 initialized, setting up rows');
                 initAll();
             } else {
-                console.log('Select2 not ready yet, waiting...');
                 setTimeout(waitForSelect2AndInit, 100);
             }
         } else {
-            console.log('Fallback: initializing without waiting for Select2');
             initAll();
         }
     }
 
-    // Initial setup with delay to ensure DOM is ready
     setTimeout(waitForSelect2AndInit, 300);
 
-    // Setup mutation observer for new rows added to the table
+    // Mutation observer for new rows
     const tableContainer = document.querySelector('fieldset[data-select2-id]');
     if (tableContainer) {
-        const observer = new MutationObserver(function (mutations) {
-            mutations.forEach(function (mutation) {
-                mutation.addedNodes.forEach(function (node) {
-                    if (node.nodeType === 1) { // Element node
-                        if (node.tagName === 'TR' && node.classList.contains('dynamic-values')) {
-                            console.log('New row detected:', node.id);
-                            setTimeout(() => setupRow(node), 100);
-                        }
-                    }
-                });
-            });
-        });
-
-        // Observe the tbody for new rows
         const tbody = tableContainer.querySelector('tbody');
         if (tbody) {
-            observer.observe(tbody, {
-                childList: true
+            const observer = new MutationObserver(function (mutations) {
+                mutations.forEach(function (mutation) {
+                    mutation.addedNodes.forEach(function (node) {
+                        if (node.nodeType === 1 && node.tagName === 'TR' && node.classList.contains('dynamic-values')) {
+                            setTimeout(() => setupRow(node), 100);
+                        }
+                    });
+                });
             });
-            console.log('Observing tbody for new rows');
+            observer.observe(tbody, { childList: true });
         }
     }
 
-    // Fallback: Handle "Add another" button clicks
+    // Add another button
     document.body.addEventListener('click', function (e) {
         const addBtn = e.target.closest('.add-row a, .addlink');
         if (addBtn) {
-            console.log('Add button clicked');
-            setTimeout(function () {
-                initAll();
-            }, 200);
+            setTimeout(initAll, 200);
         }
     });
 

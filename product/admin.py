@@ -10,6 +10,8 @@ from .models import (
 from reviews.models import ProductReview
 from django import forms
 import nested_admin
+from django.http import JsonResponse
+from django.urls import path
 from django.urls import reverse
 
 class ColorPickerWidget(forms.TextInput):
@@ -203,25 +205,21 @@ class ProductVariantAttributeValueInlineNoNested(admin.TabularInline):
 
 class ProductVariantInline(nested_admin.NestedStackedInline):
     model = ProductVariant
-    fk_name = 'product'  # This tells Django which FK to use
-    extra = 0  # Show 1 empty form for adding new variant
+    fk_name = 'product'
+    extra = 0
     fields = [
-        'sku',
-        'selling_price',
-        'regular_price',
-        # 'cost_price',
+        'variant_attributes',
+        'price',
         'stock_quantity',
         'sold_quantity',
         'low_stock_threshold',
-        'is_active',
-        'is_default',
-        # 'created_at',
-        # 'updated_at',
+        # 'is_active',
     ]
-    readonly_fields = ['created_at', 'updated_at']
-    # show_change_link = True
+    readonly_fields = ['created_at', 'updated_at',"sold_quantity"]
     
-    inlines = [ProductVariantAttributeValueInline, ProductImageInlineForVariant] 
+    inlines = [
+        # ProductVariantAttributeValueInline,
+            ProductImageInlineForVariant] 
 
 
 
@@ -231,18 +229,17 @@ from django.urls import reverse
 @admin.register(Product)
 class ProductAdmin(nested_admin.NestedModelAdmin):
     list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 
-                    # 'is_new', 
                     'is_featured', 'variant_attributes', 'action_buttons']
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ['is_active', 'is_featured']
-    autocomplete_fields = ['category', 'brand']
+    autocomplete_fields = ['brand']
     inlines = [ProductImageInline, ProductVariantInline]
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug','short_description', 'description', 'category', 'brand','base_price')
+            'fields': ('name', 'slug','short_description', 'description', 'brand', 'category','base_price')
         }),
         ('Specifications', {
             'fields': ('specifications',),
@@ -254,69 +251,87 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         }),
     )
     
-    # def is_new(self, obj):
-    #     return obj.is_new
-    # # is_new.boolean = True
-    # is_new.short_description = "New?"
+    class Media:
+        js = ('admin/js/product_brand_category.js',)
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'filter-categories/',
+                self.admin_site.admin_view(self.filter_categories),
+                name='filter_categories'
+            ),
+        ]
+        return custom_urls + urls
+
+    def filter_categories(self, request):
+        brand_id = request.GET.get('brand_id')
+        categories = []
+
+        if brand_id:
+            categories = Category.objects.filter(
+                brands__id=brand_id,
+                is_active=True
+            ).distinct().order_by('name')
+
+        return JsonResponse({
+            "categories": [
+                {"id": c.id, "name": c.name} for c in categories
+            ]
+        })
     
     def variant_attributes(self, obj):
-        variants = obj.variants.all()  # all variants for this product
+        variants = obj.variants.all()
+
         if not variants.exists():
             return format_html('<span style="color: red;">No variants</span>')
 
         rows = []
+
         for variant in variants:
-            # Get all attribute values for this variant
-            attr_values = variant.attribute_values.select_related('attribute_value__attribute')
-            # Combine attribute name and value: Color: Red / Size: M
+            attr_values = variant.variant_attributes.all()
+
             value_texts = [
-                f"{av.attribute_value.attribute.name}: {av.attribute_value.value}" 
+                f"{av.attribute.name}: {av.value}"
                 for av in attr_values
             ]
-            row_text = f"{variant.sku}: {' / '.join(value_texts) if value_texts else '-'}"
+
+            row_text = f"Rs. {variant.price}: {' / '.join(value_texts) if value_texts else '-'}"
             rows.append(row_text)
 
-        # Join each variant on a new line with HTML line breaks
         return mark_safe('<br>'.join(rows))
 
-    variant_attributes.short_description = 'Variants'
-
+    variant_attributes.short_description = "Variants"
+    
     def action_buttons(self, obj):
         edit_url = reverse('admin:product_product_change', args=[obj.id])
-        # Assuming your Product frontend view is at /products/<slug>/, adjust if different
-        # view_url = f'/products/{obj.slug}/'
         return format_html(
             '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
             'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
-            # '<a href="{}" target="_blank" style="padding:4px 10px; background-color:#28A745; color:white; '
-            # 'border-radius:5px; text-decoration:none; font-weight:bold;">View</a>',
             edit_url,
-            # view_url
         )
     action_buttons.short_description = 'Actions'
 
 class VartientAttributeValueInline(admin.TabularInline):
     model = VariantAttributeValue
-    form = VartientAttributeValueInlineForm  # attach the new form
+    form = VartientAttributeValueInlineForm
     fields = ('types', 'value', 'color_code', 'image',)
     extra = 0
 
 
 @admin.register(ProductVariant)
 class ProductVariantAdmin(admin.ModelAdmin):
-    list_display = ['sku', 'product', 'selling_price', 'stock_quantity', 'sold_quantity', 'stock_status', 'is_active', 'is_default', 'get_attributes', 'action_buttons']
+    list_display = [ 'product', 'price', 'stock_quantity', 'sold_quantity', 'stock_status', 'is_active', 'is_default', 'get_attributes', 'action_buttons']
     list_filter = ['is_active', 'is_default', 'product__category', 'product__brand']
-    search_fields = ['sku', 'product__name']
+    search_fields = ['product__name']
     autocomplete_fields = ['product']
     inlines = [ProductVariantAttributeValueInlineNoNested, ProductImageInlineForVariantNoNested]
     list_editable = ['is_active', 'stock_quantity','sold_quantity']
     
     fieldsets = (
         ('Product Information', {
-            'fields': ('product', 'sku')
-        }),
-        ('Pricing', {
-            'fields': ('selling_price', 'regular_price')
+            'fields': ('product','price' )
         }),
         ('Inventory', {
             'fields': ('stock_quantity','sold_quantity', 'low_stock_threshold')
@@ -354,12 +369,24 @@ class ProductVariantAdmin(admin.ModelAdmin):
     action_buttons.short_description = 'Actions'
 
 
+class VariantAttributeAdminForm(forms.ModelForm):
+    class Meta:
+        model = VariantAttribute
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hide the green + button for related fields
+        for field_name, field in self.fields.items():
+            if hasattr(field.widget, 'can_add_related'):
+                field.widget.can_add_related = False
 
 @admin.register(VariantAttribute)
 class VariantAttributeAdmin(admin.ModelAdmin):
     list_display = ['name', 'display_name', 'value_names', 'action_buttons']
     search_fields = ['name', 'display_name']
     inlines = [VartientAttributeValueInline]
+    form = VariantAttributeAdminForm
 
     def value_names(self, obj):
         items = []
@@ -367,12 +394,10 @@ class VariantAttributeAdmin(admin.ModelAdmin):
             if v.types == 'text' and v.value:
                 items.append(v.value)
             elif v.types == 'color' and v.color_code:
-                # Show color swatch
                 items.append(
                     f'<div style="display:inline-block; width:24px; height:24px; background-color:{v.color_code}; border:1px solid #ccc; border-radius:3px; margin-right:5px;" title="{v.color_code}"></div>'
                 )
             elif v.types == 'image' and v.image:
-                # Show small image preview
                 items.append(
                     f'<img src="{v.image.url}" width="24" height="24" style="object-fit:contain; margin-right:5px; border:1px solid #ccc; border-radius:3px;" />'
                 )
@@ -404,7 +429,6 @@ class VariantAttributeValueAdmin(admin.ModelAdmin):
     autocomplete_fields = ['attribute']
     
     def color_code_display(self, obj):
-        """Display color code with actual color preview in list view"""
         if obj.color_code:
             return format_html(
                 '<div style="display: flex; align-items: center; gap: 8px;">'
@@ -449,7 +473,7 @@ class VariantAttributeValueAdmin(admin.ModelAdmin):
 class ProductVariantAttributeValueAdmin(admin.ModelAdmin):
     list_display = ['variant', 'attribute_value', 'get_attribute_name', 'get_value', 'action_buttons']
     list_filter = ['attribute_value__attribute']
-    search_fields = ['variant__sku', 'attribute_value__value']
+    search_fields = ['attribute_value__value']
     autocomplete_fields = ['variant', 'attribute_value']
     
     def get_attribute_name(self, obj):
@@ -529,7 +553,6 @@ class ProductPromotionAdmin(admin.ModelAdmin):
             "fields": ("product","promotion_type",
                 "title",
                 "description",
-                # "icon",
                 )
         }),
         ("Schedule & Status", {
@@ -551,80 +574,8 @@ class ProductPromotionAdmin(admin.ModelAdmin):
     action_buttons.short_description = 'Actions'
 
 
-# -----------------------------------
-# Frequently Bought Together Admin
-# -----------------------------------
-# @admin.register(FrequentlyBoughtTogether)
-# class FrequentlyBoughtTogetherAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "main_product",
-#         "related_product",
-#         "discount_percentage",
-#         "display_order",
-#         "is_active",
-#     )
-#     list_filter = (
-#         "is_active",
-#     )
-#     search_fields = (
-#         "main_product__name",
-#         "related_product__name",
-#     )
-#     autocomplete_fields = (
-#         "main_product",
-#         "related_product",
-#     )
-#     ordering = ("-start_date",)
-
-#     fieldsets = (
-#         ("Products", {
-#             "fields": (
-#                 "main_product",
-#                 "related_product",
-#             )
-#         }),
-#         ("Offer Details", {
-#             "fields": (
-#                 "discount_percentage",
-#                 "display_order",
-#                 "is_active",
-#             )
-#         }),
-#     )
-
-
-# -----------------------------------
-# Product Comparison Admin
-# # -----------------------------------
-# @admin.register(ProductComparison)
-# class ProductComparisonAdmin(admin.ModelAdmin):
-#     list_display = (
-#         "user",
-#         "product",
-#         "added_at",
-#     )
-#     list_filter = (
-#         "added_at",
-#     )
-#     search_fields = (
-#         "user__username",
-#         "user__email",
-#         "product__name",
-#     )
-    # autocomplete_fields = (
-    #     "user",
-    #     "product",
-    # )
-#     date_hierarchy = "added_at"
-#     ordering = ("-added_at",)
-
-
-from django.contrib import admin
-from .models import Deal
-
 @admin.register(Deal)
 class DealAdmin(admin.ModelAdmin):
-    # Columns to display in list view
     list_display = (
         'title',
         'deal_type',
@@ -645,7 +596,6 @@ class DealAdmin(admin.ModelAdmin):
         'action_buttons',
     )
     
-    # Filters for sidebar
     list_filter = (
         'deal_type',
         'is_active',
@@ -655,16 +605,12 @@ class DealAdmin(admin.ModelAdmin):
         'product'
     )
     
-    # Fields searchable via search box
-    search_fields = ('title', 'product__name', 'variant__name')
+    search_fields = ('title', 'product__name',)
     
-    # Auto-fill slug from title
     prepopulated_fields = {'slug': ('title',)}
     
-    # Editable fields directly in list view
     list_editable = ('discounted_price', 'is_active','sold_quantity', 'is_featured')
     
-    # Field grouping in admin form
     fieldsets = (
         ('Deal Info', {
             'fields': ('title', 'slug', 'deal_type', 'product', 'variant', 'description', 'terms_and_conditions')
@@ -687,14 +633,10 @@ class DealAdmin(admin.ModelAdmin):
         ('Analytics', {
             'fields': ('view_count', 'click_count')
         }),
-        # ('Status', {
-        #     'fields': ('is_active',)
-        # }),
     )
     
     readonly_fields = (
         'discount_percentage',
-        # 'sold_quantity',
         'view_count',
         'click_count',
         'remaining_quantity',
@@ -719,7 +661,7 @@ class RecentlyViewedProductAdmin(admin.ModelAdmin):
     list_filter = ['viewed_at', 'user']
     search_fields = ['user__username', 'product__name']
     ordering = ['-viewed_at']
-    readonly_fields = ['viewed_at']  # optional: make viewed_at read-only
+    readonly_fields = ['viewed_at']
     
     def action_buttons(self, obj):
         edit_url = reverse('admin:product_recentlyviewedproduct_change', args=[obj.id])
@@ -729,8 +671,3 @@ class RecentlyViewedProductAdmin(admin.ModelAdmin):
             edit_url
         )
     action_buttons.short_description = 'Actions'
-
-# class ProductVariantAutocompleteAdmin(admin.ModelAdmin):
-#     search_fields = ['sku', 'product__name'] # Assuming product__name works. If not, maybe product__name.
-
-# admin.site.register(ProductVariant, ProductVariantAutocompleteAdmin)

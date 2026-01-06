@@ -12,3 +12,10 @@
     object-fit: contain;
 }
 
+.djn-item-content {
+    background: rgb(246, 255, 255) !important;
+}
+
+a.btn[href$="/admin/product/variantattribute/add/"] {
+    display: none !important;
+}

@@ -65,10 +65,13 @@ class Product(models.Model):
     description = HTMLField()
     short_description = HTMLField(blank=True, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products')
-    brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True, related_name='products')
-    
+    brand = models.ForeignKey(
+        Brand,
+        on_delete=models.PROTECT,
+        related_name='products'
+    )    
     # Base price (optional, can be overridden by variants)
-    base_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    base_price = models.DecimalField(max_digits=10, decimal_places=2)
     
     # Product specifications
     specifications = HTMLField(blank=True, null=True)  # e.g., {"processor": "Snapdragon 888", "screen": "6.5 inch"}
@@ -106,8 +109,17 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def clean(self):
+        if self.brand and self.category:
+            if not self.brand.category.filter(id=self.category_id).exists():
+                raise ValidationError(
+                    {"brand": "Selected brand does not belong to the selected category."}
+            )
+
 
     def save(self, *args, **kwargs):
+        self.full_clean()
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
@@ -145,6 +157,7 @@ class VariantAttributeValue(models.Model):
         choices=TYPE_CHOICES,
         default="text"
     )
+    
     value = models.CharField(max_length=100, blank=True, null=True)  # e.g., "Red", "8GB", "256GB"
     
     # Optional: for color swatches or icons
@@ -186,11 +199,12 @@ class VariantAttributeValue(models.Model):
 class ProductVariant(models.Model):
     """Actual product variants with specific attribute combinations"""
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='variants')
-    sku = models.CharField(max_length=100, unique=True , blank=True)
+    # sku = models.CharField(max_length=100, unique=True , blank=True)
+    variant_attributes = models.ManyToManyField(VariantAttributeValue, related_name="product_variants")
     
     # Pricing
-    selling_price = models.DecimalField(max_digits=10, decimal_places=2)
-    regular_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Original price for discounts
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    # regular_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Original price for discounts
     # cost_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     
     # Inventory
@@ -209,7 +223,7 @@ class ProductVariant(models.Model):
     class Meta:
         verbose_name = "Product Variant"
         verbose_name_plural = "Product Variant"
-        ordering = ['product', '-is_default', 'selling_price']
+        ordering = ['product', '-is_default', 'price']
 
     def __str__(self):
         attributes = ", ".join([f"{va.attribute.name}: {va.value}" for va in self.attribute_values.all()])
@@ -223,57 +237,69 @@ class ProductVariant(models.Model):
     def is_low_stock(self):
         return 0 < self.stock_quantity <= self.low_stock_threshold
     
-    def generate_sku(self):
-        """
-        Generate a unique SKU.
-        If variant attributes are available, it creates a descriptive SKU.
-        e.g., 'BRAND-PRODUCT-ATTR1-ATTR2'
-        Otherwise, it falls back to a random SKU.
-        """
-        # --- Descriptive SKU part ---
-        # This part works if the variant has been saved and has attributes.
-        if self.pk and self.attribute_values.exists():
-            parts = []
-            if self.product.brand:
-                # Use a short, uppercase code for the brand
-                brand_part = slugify(self.product.brand.name).upper().replace('-', '')[:4]
-                parts.append(brand_part)
+    # def generate_sku(self):
+    #     """
+    #     Generate a unique SKU.
+    #     If variant attributes are available, it creates a descriptive SKU.
+    #     e.g., 'BRAND-PRODUCT-ATTR1-ATTR2'
+    #     Otherwise, it falls back to a random SKU.
+    #     """
+    #     # --- Descriptive SKU part ---
+    #     # This part works if the variant has been saved and has attributes.
+    #     if self.pk and self.attribute_values.exists():
+    #         parts = []
+    #         if self.product.brand:
+    #             # Use a short, uppercase code for the brand
+    #             brand_part = slugify(self.product.brand.name).upper().replace('-', '')[:4]
+    #             parts.append(brand_part)
 
-            # Use a short, uppercase code for the product name
-            product_part = slugify(self.product.name).upper().replace('-', '')[:10]
-            parts.append(product_part)
+    #         # Use a short, uppercase code for the product name
+    #         product_part = slugify(self.product.name).upper().replace('-', '')[:10]
+    #         parts.append(product_part)
 
-            # Add attribute values, ordered by attribute name for consistency
-            attributes = self.attribute_values.order_by('attribute_value__attribute__name')
-            attr_parts = [slugify(attr.attribute_value.value).upper() for attr in attributes]
-            parts.extend(attr_parts)
+    #         # Add attribute values, ordered by attribute name for consistency
+    #         attributes = self.attribute_values.order_by('attribute_value__attribute__name')
+    #         attr_parts = [slugify(attr.attribute_value.value).upper() for attr in attributes]
+    #         parts.extend(attr_parts)
 
-            base_sku = "-".join(parts)
-            sku = base_sku
+    #         base_sku = "-".join(parts)
+    #         sku = base_sku
 
-            # Ensure SKU is unique by appending a counter if needed
-            counter = 1
-            while ProductVariant.objects.filter(sku=sku).exclude(pk=self.pk).exists():
-                sku = f"{base_sku}-{counter}"
-                counter += 1
-            return sku
+    #         # Ensure SKU is unique by appending a counter if needed
+    #         counter = 1
+    #         while ProductVariant.objects.filter(sku=sku).exclude(pk=self.pk).exists():
+    #             sku = f"{base_sku}-{counter}"
+    #             counter += 1
+    #         return sku
 
-        # --- Fallback to random SKU ---
-        # This is used if attributes are not yet set (e.g. on initial creation).
-        base = slugify(self.product.name)[:10]
-        while True:
-            random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
-            sku = f"{base}-{random_suffix}"
-            if not ProductVariant.objects.filter(sku=sku).exists():
-                return sku
+    #     # --- Fallback to random SKU ---
+    #     # This is used if attributes are not yet set (e.g. on initial creation).
+    #     base = slugify(self.product.name)[:10]
+    #     while True:
+    #         random_suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    #         sku = f"{base}-{random_suffix}"
+    #         if not ProductVariant.objects.filter(sku=sku).exists():
+    #             return sku
 
     def save(self, *args, **kwargs):
         # Auto-generate SKU if not provided or to update based on attributes
-        self.sku = self.generate_sku()
+        # self.sku = self.generate_sku()
+        # Ensure only one default variant per product
+        is_new = self.pk is None
+        
+
+        # If this is the FIRST variant of the product → make it default
+        if is_new and not ProductVariant.objects.filter(product=self.product).exists():
+            self.is_default = True
+
+        super().save(*args, **kwargs)
         # Ensure only one default variant per product
         if self.is_default:
-            ProductVariant.objects.filter(product=self.product, is_default=True).exclude(pk=self.pk).update(is_default=False)
-        super().save(*args, **kwargs)
+            ProductVariant.objects.filter(
+                product=self.product,
+                is_default=True
+            ).exclude(pk=self.pk).update(is_default=False)
+
 
 
 class ProductVariantAttributeValue(models.Model):

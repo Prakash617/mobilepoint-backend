@@ -576,7 +576,7 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProductVariantDetailSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
     filterset_fields = ["product", "is_default"]
-    search_fields = ["sku", "product__name"]
+    search_fields = ["product__name"]
 
     @action(detail=True, methods=["get"])
     def check_stock(self, request, pk=None):
@@ -584,7 +584,6 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
         variant = self.get_object()
         return Response(
             {
-                "sku": variant.sku,
                 "stock_quantity": variant.stock_quantity,
                 "is_in_stock": variant.is_in_stock,
                 "is_low_stock": variant.is_low_stock,
@@ -985,3 +984,13 @@ class RecentlyViewedProductViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True, context={'request': request})
         return Response(serializer.data)
+
+from rest_framework.decorators import api_view
+@api_view(['GET'])
+def get_categories_by_brand(request):
+    brand_id = request.GET.get('brand_id')
+    if not brand_id:
+        return Response({"error": "Brand ID is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+    categories = Category.objects.filter(brands__id=brand_id, is_active=True).values('id', 'name')
+    return Response(list(categories))

@@ -44,7 +44,6 @@ INSTALLED_APPS = [
     "nested_admin",
 ]
 
-X_FRAME_OPTIONS = 'SAMEORIGIN'
 
 # REST Framework Configuration
 REST_FRAMEWORK = {
@@ -470,7 +469,7 @@ DASHUB_SETTINGS = {
                     {"model": "product.productpromotion", "order": 1},
                     {"model": "product.deal", "order": 2},
                     {"model": "product.frequentlyboughttogether", "order": 3},
-                    {"model": "product.frequentlyboughttogether", "order": 3},
+                    # {"model": "product.frequentlyboughttogether", "order": 3},
                 ],
             },
         ],

@@ -208,6 +208,7 @@ class ProductVariantInline(nested_admin.NestedStackedInline):
     fk_name = 'product'
     extra = 0
     fields = [
+        # Manage variant attribute values via the ProductVariantAttributeValue inline
         'variant_attributes',
         'price',
         'stock_quantity',
@@ -230,18 +231,18 @@ from django.urls import reverse
 class ProductAdmin(nested_admin.NestedModelAdmin):
     list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 
                     'is_featured', 
-                    'variant_attributes', 
+                    'get_attributes', 
                     'action_buttons']
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ['is_active', 'is_featured']
-    autocomplete_fields = ['brand']
+    autocomplete_fields = []
     inlines = [ProductImageInline, ProductVariantInline]
     
     fieldsets = (
         ('Basic Information', {
-            'fields': ('name', 'slug','short_description', 'description', 'brand', 'category','base_price')
+            'fields': ('name', 'slug','short_description', 'description',  'category','brand','base_price')
         }),
         ('Specifications', {
             'fields': ('specifications',),
@@ -253,41 +254,38 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         }),
     )
     
-    # class Media:
-    #     js = ('admin/js/product_brand_category.js',)
-
+    class Media:
+        js = ("admin/js/product_admin.js",)
     def get_urls(self):
         urls = super().get_urls()
         custom_urls = [
             path(
-                'filter-categories/',
-                self.admin_site.admin_view(self.filter_categories),
-                name='filter_categories'
+                "get-brands/",
+                self.admin_site.admin_view(self.get_brands),
+                name="get_brands",
             ),
         ]
         return custom_urls + urls
 
-    def filter_categories(self, request):
-        brand_id = request.GET.get('brand_id')
-        categories = []
+    def get_brands(self, request):
+        category_id = request.GET.get("category_id")
 
-        if brand_id:
-            categories = Category.objects.filter(
-                brands__id=brand_id,
-                is_active=True
-            ).distinct().order_by('name')
+        brands = Brand.objects.filter(
+            category__id=category_id,
+            is_active=True
+        ).distinct()
 
-        return JsonResponse({
-            "categories": [
-                {"id": c.id, "name": c.name} for c in categories
-            ]
-        })
-    
-    def variant_attributes(self, obj):
+        return JsonResponse(
+            [{"id": b.id, "name": b.name} for b in brands],
+            safe=False
+        )
+
+    def get_attributes(self, obj):
+        # return 'hello'
         variants = obj.variants.all()
 
         if not variants.exists():
-            return format_html('<span style="color: red;">No variants</span>')
+            return format_html('<span style="color: red;">{}</span>', 'No variants')
 
         rows = []
 
@@ -304,7 +302,7 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
 
         return mark_safe('<br>'.join(rows))
 
-    variant_attributes.short_description = "Variants"
+    get_attributes.short_description = "Variants"
     
     def action_buttons(self, obj):
         edit_url = reverse('admin:product_product_change', args=[obj.id])

@@ -281,7 +281,6 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         )
 
     def get_attributes(self, obj):
-        # return 'hello'
         variants = obj.variants.all()
 
         if not variants.exists():
@@ -290,12 +289,19 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
         rows = []
 
         for variant in variants:
-            attr_values = variant.variant_attributes.all()
+            attr_values = variant.variant_attributes.all().select_related('attribute')
+            
+            value_texts = []
+            for av in attr_values:
+                display_value = ''
+                if av.types == 'color' and av.color_code:
+                    display_value = f'<span style="display: inline-block; width: 20px; height: 20px; background-color: {av.color_code}; border: 1px solid #ccc; vertical-align: middle; border-radius: 50%;" title="{av.color_code}"></span>'
+                elif av.types == 'image' and av.image:
+                    display_value = f'<img src="{av.image.url}" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle; border-radius: 4px;" title="Image">'
+                else:  # text or fallback
+                    display_value = av.value or ''
 
-            value_texts = [
-                f"{av.attribute.name}: {av.value}"
-                for av in attr_values
-            ]
+                value_texts.append(f"{av.attribute.name}: {display_value}")
 
             row_text = f"Rs. {variant.price}: {' / '.join(value_texts) if value_texts else '-'}"
             rows.append(row_text)
@@ -343,7 +349,21 @@ class ProductVariantAdmin(admin.ModelAdmin):
     
     def get_attributes(self, obj):
         attrs = obj.attribute_values.select_related('attribute_value__attribute')
-        return ', '.join([f"{av.attribute.name}: {av.value}" for av in attrs])
+        
+        value_texts = []
+        for av in attrs:
+            display_value = ''
+            attribute_value = av.attribute_value
+            if attribute_value.types == 'color' and attribute_value.color_code:
+                display_value = f'<span style="display: inline-block; width: 20px; height: 20px; background-color: {attribute_value.color_code}; border: 1px solid #ccc; vertical-align: middle; border-radius: 50%;" title="{attribute_value.color_code}"></span>'
+            elif attribute_value.types == 'image' and attribute_value.image:
+                display_value = f'<img src="{attribute_value.image.url}" style="width: 40px; height: 40px; object-fit: cover; vertical-align: middle; border-radius: 4px;" title="Image">'
+            else:  # text or fallback
+                display_value = attribute_value.value or ''
+
+            value_texts.append(f"{av.attribute.name}: {display_value}")
+        
+        return mark_safe(', '.join(value_texts))
     get_attributes.short_description = 'Attributes'
     
     def stock_status(self, obj):

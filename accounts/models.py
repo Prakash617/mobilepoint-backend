@@ -28,8 +28,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
     is_premium = models.BooleanField(default=False)  # quick access flag
-    favorite_categories = models.ManyToManyField('product.category', blank=True, null=True)
-    favorite_brands = models.ManyToManyField('product.brand', blank=True, null=True)
+    favorite_categories = models.ManyToManyField('product.Category', blank=True, related_name='favorited_by_users')
+    favorite_brands = models.ManyToManyField('product.Brand', blank=True, related_name='favorited_by_users')
 
 
     objects = UserManager()

@@ -102,7 +102,7 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
         fields = [
-            'id', 'sku', 'price', 'compare_at_price', 
+            'id', 'price', 
             'stock_quantity','sold_quantity',  'is_in_stock', 'is_low_stock',
             'is_default', 'attributes', 'images'
         ]
@@ -117,7 +117,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductVariant
         fields = [
-            'id', 'product_name', 'sku', 'price', 'compare_at_price', 'cost_price',
+            'id', 'product_name', 'price',
             'stock_quantity','sold_quantity', 'low_stock_threshold', 'is_in_stock', 'is_low_stock',
             'is_active', 'is_default', 'attributes', 'images', 
             'created_at', 'updated_at'
@@ -173,14 +173,13 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_discount(self, obj):
         """
         Returns discount info for the product:
-        - If default_variant.compare_at_price exists and is greater than price,
-          calculate discount percentage and amount.
+        - Compare variant price with product base_price
         - Returns dict: {'amount': ..., 'percentage': ...} or None
         """
         variant = obj.variants.filter(is_default=True, is_active=True).first()
-        if variant and variant.compare_at_price and variant.compare_at_price > variant.price:
-            discount_amount = variant.compare_at_price - variant.price
-            discount_percentage = (discount_amount / variant.compare_at_price) * 100
+        if variant and obj.base_price and variant.price < obj.base_price:
+            discount_amount = obj.base_price - variant.price
+            discount_percentage = (discount_amount / obj.base_price) * 100
             return {
                 'amount': float(discount_amount),
                 'percentage': round(discount_percentage, 2)
@@ -326,8 +325,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return {
             "title": promo.title,
             "description": promo.description,
-            "icon": promo.icon,
-            "expires_at": promo.end_date,
             "expires_at": promo.end_date.strftime("%I:%M %p, %d/%m/%Y"),
         }
 
@@ -372,7 +369,6 @@ class DealListSerializer(serializers.ModelSerializer):
         if obj.variant:
             attributes = obj.variant.attribute_values.all()
             return {
-                'sku': obj.variant.sku,
                 'attributes': [
                     {
                         'name': attr.attribute_value.attribute.name,
@@ -491,7 +487,7 @@ class DealDetailSerializer(serializers.ModelSerializer):
     def get_available_variants(self, obj):
         """Get all variants this deal applies to"""
         variants = obj.get_applicable_variants()
-        return ProductVariantSerializer(variants, many=True).data
+        return ProductVariantListSerializer(variants, many=True).data
 
 
 class DealCreateUpdateSerializer(serializers.ModelSerializer):

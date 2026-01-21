@@ -553,9 +553,9 @@ class Deal(models.Model):
         
         # Auto-populate prices from variant if not set
         if self.variant and not self.original_price:
-            self.original_price = self.variant.compare_at_price or self.variant.price
+            self.original_price = self.variant.price
         if self.variant and not self.discounted_price:
-            self.discounted_price = self.variant.price
+            self.discounted_price = self.variant.price * 0.8  # Default 20% discount
             
         super().save(*args, **kwargs)
 

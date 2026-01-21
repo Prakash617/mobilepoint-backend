@@ -534,8 +534,8 @@ TINYMCE_DEFAULT_CONFIG = {
     "external_filemanager_path": "/filehub/select/",
     "filemanager_title": "Filemanager",
     "external_plugins": {
-        # "filehub": "/static/filehub/tinymce/plugin.js",
-        "filehub": "/static/filehub/tinymce/plugin.min.js",
+        "filehub": "/static/filehub/tinymce/plugin.js",
+        # "filehub": "/static/filehub/tinymce/plugin.min.js",
         "questionshortcode": "/static/admin/tinymce/questionshortcode/plugin.js",
     },
     "relative_urls": False,

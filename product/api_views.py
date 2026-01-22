@@ -318,9 +318,9 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         for attr in attributes:
             values = (
                 attr.values.filter(
-                    productvariantattributevalue__variant_id__in=product_variant_ids
+                    product_variants__in=product_variant_ids
                 )
-                .annotate(count=Count("productvariantattributevalue__variant_id", distinct=True))
+                .annotate(count=Count("product_variants", distinct=True))
                 .values("value", "id", "count", "color_code")
                 .order_by("value")
             )

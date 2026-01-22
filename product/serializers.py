@@ -2,7 +2,8 @@ from rest_framework import serializers
 from django.utils import timezone
 from .models import (
     Category, Brand, Product, VariantAttribute, VariantAttributeValue,
-    ProductVariant, ProductVariantAttributeValue, ProductImage, Deal,RecentlyViewedProduct
+    ProductVariant,
+    ProductImage, Deal,RecentlyViewedProduct
 )
 
 
@@ -84,19 +85,19 @@ class VariantAttributeValueSerializer(serializers.ModelSerializer):
         fields = ['id', 'attribute_name', 'attribute_display_name', 'value', 'color_code', 'image']
 
 
-class ProductVariantAttributeValueSerializer(serializers.ModelSerializer):
-    attribute = serializers.CharField(source='attribute_value.attribute.name', read_only=True)
-    value = serializers.CharField(source='attribute_value.value', read_only=True)
-    color_code = serializers.CharField(source='attribute_value.color_code', read_only=True)
+# class ProductVariantAttributeValueSerializer(serializers.ModelSerializer):
+#     attribute = serializers.CharField(source='attribute_value.attribute.name', read_only=True)
+#     value = serializers.CharField(source='attribute_value.value', read_only=True)
+#     color_code = serializers.CharField(source='attribute_value.color_code', read_only=True)
     
-    class Meta:
-        model = ProductVariantAttributeValue
-        fields = ['attribute', 'value', 'color_code']
+#     class Meta:
+#         model = ProductVariantAttributeValue
+#         fields = ['attribute', 'value', 'color_code']
 
 
 class ProductVariantListSerializer(serializers.ModelSerializer):
     """Simplified variant serializer for product list"""
-    attributes = ProductVariantAttributeValueSerializer(source='attribute_values', many=True, read_only=True)
+    variant_attributes = VariantAttributeValueSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     
     class Meta:
@@ -104,13 +105,13 @@ class ProductVariantListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'price', 
             'stock_quantity','sold_quantity',  'is_in_stock', 'is_low_stock',
-            'is_default', 'attributes', 'images'
+            'is_default', 'variant_attributes', 'images'
         ]
 
 
 class ProductVariantDetailSerializer(serializers.ModelSerializer):
     """Detailed variant serializer"""
-    attributes = ProductVariantAttributeValueSerializer(source='attribute_values', many=True, read_only=True)
+    variant_attributes = VariantAttributeValueSerializer(many=True, read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
     product_name = serializers.CharField(source='product.name', read_only=True)
     
@@ -119,7 +120,7 @@ class ProductVariantDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product_name', 'price',
             'stock_quantity','sold_quantity', 'low_stock_threshold', 'is_in_stock', 'is_low_stock',
-            'is_active', 'is_default', 'attributes', 'images', 
+            'is_active', 'is_default', 'variant_attributes', 'images', 
             'created_at', 'updated_at'
         ]
 
@@ -161,7 +162,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         """
         attributes = {}
         for variant in obj.variants.filter(is_active=True):
-            for attr_val in variant.attribute_values.all():
+            for attr_val in variant.variant_attributes.all():
                 attr_name = attr_val.attribute.name
                 if attr_name not in attributes:
                     attributes[attr_name] = set()
@@ -256,29 +257,29 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         attributes = {}
         
         for variant in obj.variants.filter(is_active=True):
-            for attr_value in variant.attribute_values.all():
-                attr_name = attr_value.attribute_value.attribute.name
+            for attr_value in variant.variant_attributes.all():
+                attr_name = attr_value.attribute.name
                 
                 if attr_name not in attributes:
                     attributes[attr_name] = {
                         'name': attr_name,
-                        'display_name': attr_value.attribute_value.attribute.display_name,
+                        'display_name': attr_value.attribute.display_name,
                         'values': []
                     }
                 
                 value_data = {
-                    'id': attr_value.attribute_value.id,
-                    'value': attr_value.attribute_value.value,
-                    'color_code': attr_value.attribute_value.color_code,
+                    'id': attr_value.id,
+                    'value': attr_value.value,
+                    'color_code': attr_value.color_code,
                 }
                 
                 # Add image URL if available
-                if attr_value.attribute_value.image:
+                if attr_value.image:
                     request = self.context.get('request')
                     if request:
-                        value_data['image'] = request.build_absolute_uri(attr_value.attribute_value.image.url)
+                        value_data['image'] = request.build_absolute_uri(attr_value.image.url)
                     else:
-                        value_data['image'] = attr_value.attribute_value.image.url
+                        value_data['image'] = attr_value.image.url
                 
                 # Avoid duplicates
                 if value_data not in attributes[attr_name]['values']:
@@ -367,12 +368,12 @@ class DealListSerializer(serializers.ModelSerializer):
     
     def get_variant_info(self, obj):
         if obj.variant:
-            attributes = obj.variant.attribute_values.all()
+            attributes = obj.variant.variant_attributes.all()
             return {
                 'attributes': [
                     {
-                        'name': attr.attribute_value.attribute.name,
-                        'value': attr.attribute_value.value
+                        'name': attr.attribute.name,
+                        'value': attr.value
                     }
                     for attr in attributes
                 ]

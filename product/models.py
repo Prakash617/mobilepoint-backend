@@ -228,7 +228,7 @@ class ProductVariant(models.Model):
         ordering = ['product', '-is_default', 'price']
 
     def __str__(self):
-        attributes = ", ".join([f"{va.attribute.name}: {va.value}" for va in self.attribute_values.all()])
+        attributes = ", ".join([f"{va.attribute.name}: {va.value}" for va in self.variant_attributes.all()])
         return f"{self.product.name} - {attributes}"
 
     @property
@@ -304,26 +304,26 @@ class ProductVariant(models.Model):
 
 
 
-class ProductVariantAttributeValue(models.Model):
-    """Links variants to their attribute values (Many-to-Many relationship)"""
-    variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='attribute_values')
-    attribute_value = models.ForeignKey(VariantAttributeValue, on_delete=models.CASCADE)
+# class ProductVariantAttributeValue(models.Model):
+#     """Links variants to their attribute values (Many-to-Many relationship)"""
+#     variant = models.ForeignKey(ProductVariant, on_delete=models.CASCADE, related_name='attribute_values')
+#     attribute_value = models.ForeignKey(VariantAttributeValue, on_delete=models.CASCADE)
 
-    class Meta:
-        verbose_name = "Variant Attribute Mapping"
-        verbose_name_plural = "Variant Attribute Mapping"
-        unique_together = ('variant', 'attribute_value')
+#     class Meta:
+#         verbose_name = "Variant Attribute Mapping"
+#         verbose_name_plural = "Variant Attribute Mapping"
+#         unique_together = ('variant', 'attribute_value')
 
-    def __str__(self):
-        return f"{self.variant.sku} - {self.attribute_value}"
+#     def __str__(self):
+#         return f"{self.variant.sku} - {self.attribute_value}"
 
-    @property
-    def attribute(self):
-        return self.attribute_value.attribute
+#     @property
+#     def attribute(self):
+#         return self.attribute_value.attribute
 
-    @property
-    def value(self):
-        return self.attribute_value.value
+#     @property
+#     def value(self):
+#         return self.attribute_value.value
 
 
 class ProductImage(models.Model):

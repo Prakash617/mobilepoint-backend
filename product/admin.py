@@ -2,7 +2,9 @@ from django.contrib import admin
 from django.utils.html import format_html, format_html_join, mark_safe
 from .models import (
     Category, Brand, Product, VariantAttribute, VariantAttributeValue,
-    ProductVariant, ProductVariantAttributeValue, ProductImage, ProductPromotion,
+    ProductVariant,
+    # ProductVariantAttributeValue, 
+    ProductImage, ProductPromotion,
     FrequentlyBoughtTogether,
     # ProductComparison,
     Deal,RecentlyViewedProduct
@@ -192,15 +194,15 @@ class ProductImageInlineForVariantNoNested(admin.TabularInline):
         return "No image"
 
 
-class ProductVariantAttributeValueInline(nested_admin.NestedStackedInline):
-    model = ProductVariantAttributeValue
-    extra = 1
-    autocomplete_fields = ['attribute_value']
+# class ProductVariantAttributeValueInline(nested_admin.NestedStackedInline):
+#     model = ProductVariantAttributeValue
+#     extra = 1
+#     autocomplete_fields = ['attribute_value']
     
-class ProductVariantAttributeValueInlineNoNested(admin.TabularInline):
-    model = ProductVariantAttributeValue
-    extra = 1
-    autocomplete_fields = ['attribute_value']
+# class ProductVariantAttributeValueInlineNoNested(admin.TabularInline):
+#     model = ProductVariantAttributeValue
+#     extra = 1
+#     autocomplete_fields = ['attribute_value']
 
 
 class ProductVariantInline(nested_admin.NestedStackedInline):
@@ -332,7 +334,8 @@ class ProductVariantAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'is_default', 'product__category', 'product__brand']
     search_fields = ['product__name']
     autocomplete_fields = ['product']
-    inlines = [ProductVariantAttributeValueInlineNoNested, ProductImageInlineForVariantNoNested]
+    # inlines = [ProductVariantAttributeValueInlineNoNested, ProductImageInlineForVariantNoNested]
+    inlines = [ ProductImageInlineForVariantNoNested]
     list_editable = ['is_active', 'stock_quantity','sold_quantity']
     
     fieldsets = (
@@ -489,29 +492,29 @@ class VariantAttributeValueAdmin(admin.ModelAdmin):
 
 
 
-@admin.register(ProductVariantAttributeValue)
-class ProductVariantAttributeValueAdmin(admin.ModelAdmin):
-    list_display = ['variant', 'attribute_value', 'get_attribute_name', 'get_value', 'action_buttons']
-    list_filter = ['attribute_value__attribute']
-    search_fields = ['attribute_value__value']
-    autocomplete_fields = ['variant', 'attribute_value']
+# @admin.register(ProductVariantAttributeValue)
+# class ProductVariantAttributeValueAdmin(admin.ModelAdmin):
+#     list_display = ['variant', 'attribute_value', 'get_attribute_name', 'get_value', 'action_buttons']
+#     list_filter = ['attribute_value__attribute']
+#     search_fields = ['attribute_value__value']
+#     autocomplete_fields = ['variant', 'attribute_value']
     
-    def get_attribute_name(self, obj):
-        return obj.attribute_value.attribute.name
-    get_attribute_name.short_description = 'Attribute'
+#     def get_attribute_name(self, obj):
+#         return obj.attribute_value.attribute.name
+#     get_attribute_name.short_description = 'Attribute'
     
-    def get_value(self, obj):
-        return obj.attribute_value.value
-    get_value.short_description = 'Value'
+#     def get_value(self, obj):
+#         return obj.attribute_value.value
+#     get_value.short_description = 'Value'
     
-    def action_buttons(self, obj):
-        edit_url = reverse('admin:product_productvariantattributevalue_change', args=[obj.id])
-        return format_html(
-            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
-            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
-            edit_url
-        )
-    action_buttons.short_description = 'Actions'
+#     def action_buttons(self, obj):
+#         edit_url = reverse('admin:product_productvariantattributevalue_change', args=[obj.id])
+#         return format_html(
+#             '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+#             'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+#             edit_url
+#         )
+#     action_buttons.short_description = 'Actions'
 
 
 @admin.register(ProductImage)

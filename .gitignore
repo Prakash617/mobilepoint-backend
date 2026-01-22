@@ -36,7 +36,7 @@ media/
 local_settings.py
 
 # Migrations (optional – keep if you want)
-# **/migrations/*.py
+**/migrations/*.py
 # **/migrations/__pycache__/
 
 # ======================

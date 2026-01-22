@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<style>
+    .filehub-iframe {
+        width: 100%;
+        height: 85vh;
+        border: none;
+    }
+    .page-header {
+    display: none;
+}
+</style>
+
+<iframe src="/admin/filehub/" class="filehub-iframe"></iframe>
+{% endblock %}

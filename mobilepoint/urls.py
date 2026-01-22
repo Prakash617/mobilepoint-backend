@@ -27,10 +27,13 @@ from django.conf.urls.static import static
 
 from rest_framework.routers import DefaultRouter
 from product.api_views import ProductViewSet
+from .admin_views import filehub_embed, analytic_dashboard
 router = DefaultRouter()
 
 urlpatterns = [
-    path('', include('filehub.urls')),
+    path('admin/', include('filehub.urls')),
+    path("filemanager/", filehub_embed, name="admin_filehub"),
+    path("analytic_dashboard/", analytic_dashboard, name="analytic_dashboard"),
     path('admin/', admin.site.urls),
     path('product/', include('product.api_urls')),
     # Direct route for frontend-friendly related products URL

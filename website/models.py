@@ -226,7 +226,6 @@ class SiteSettings(models.Model):
 class CuratedItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
-
     title = models.CharField(max_length=255)
     subtitle = models.CharField(max_length=255, blank=True, help_text="Small description under title")
     image = models.ImageField(upload_to="curated/", help_text="Main card image")
@@ -235,7 +234,7 @@ class CuratedItem(models.Model):
     position = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    
     class Meta:
         ordering = ["position", "-created_at"]
         verbose_name = "Curated Item"
@@ -243,3 +242,7 @@ class CuratedItem(models.Model):
 
     def __str__(self):
         return self.title
+    
+    
+
+    

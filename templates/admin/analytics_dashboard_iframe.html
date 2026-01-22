@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TechGadget Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    {% comment %} <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">TechGadget Analytics</h1>
+                    <p class="text-sm text-gray-500">Electronics & Accessories</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <select class="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Last 7 Days</option>
+                    <option>Last 30 Days</option>
+                    <option>Last 90 Days</option>
+                    <option>This Year</option>
+                </select>
+                <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">
+                    Export Report
+                </button>
+            </div>
+        </div>
+    </header> {% endcomment %}
+
+    <div class="p-6 max-w-7xl mx-auto">
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <!-- Total Revenue -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">+12.5%</span>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Total Revenue</h3>
+                <p class="text-3xl font-bold text-gray-900">$284,590</p>
+                <p class="text-xs text-gray-500 mt-2">vs. last period: $253,240</p>
+            </div>
+
+            <!-- Total Orders -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">+8.2%</span>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Total Orders</h3>
+                <p class="text-3xl font-bold text-gray-900">3,842</p>
+                <p class="text-xs text-gray-500 mt-2">vs. last period: 3,551</p>
+            </div>
+
+            <!-- Average Order Value -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium text-green-600 bg-green-100 px-2 py-1 rounded">+4.1%</span>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Avg. Order Value</h3>
+                <p class="text-3xl font-bold text-gray-900">$74.05</p>
+                <p class="text-xs text-gray-500 mt-2">vs. last period: $71.12</p>
+            </div>
+
+            <!-- Conversion Rate -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                        </svg>
+                    </div>
+                    <span class="text-sm font-medium text-red-600 bg-red-100 px-2 py-1 rounded">-1.3%</span>
+                </div>
+                <h3 class="text-gray-500 text-sm font-medium mb-1">Conversion Rate</h3>
+                <p class="text-3xl font-bold text-gray-900">3.24%</p>
+                <p class="text-xs text-gray-500 mt-2">vs. last period: 3.28%</p>
+            </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Revenue Chart -->
+            <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Revenue Overview</h2>
+                <div style="height: 300px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Categories -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Top Categories</h2>
+                <canvas id="categoryChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Products and Traffic Row -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Top Products -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Top Selling Products</h2>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded flex items-center justify-center text-blue-600 font-semibold">1</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Wireless Earbuds Pro</p>
+                                <p class="text-sm text-gray-500">1,245 units sold</p>
+                            </div>
+                        </div>
+                        <span class="text-green-600 font-semibold">$62,250</span>
+                    </div>
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded flex items-center justify-center text-purple-600 font-semibold">2</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Smart Watch Series 5</p>
+                                <p class="text-sm text-gray-500">892 units sold</p>
+                            </div>
+                        </div>
+                        <span class="text-green-600 font-semibold">$53,520</span>
+                    </div>
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-green-100 rounded flex items-center justify-center text-green-600 font-semibold">3</div>
+                            <div>
+                                <p class="font-medium text-gray-900">USB-C Hub 7-in-1</p>
+                                <p class="text-sm text-gray-500">1,567 units sold</p>
+                            </div>
+                        </div>
+                        <span class="text-green-600 font-semibold">$47,010</span>
+                    </div>
+                    <div class="flex items-center justify-between pb-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-orange-100 rounded flex items-center justify-center text-orange-600 font-semibold">4</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Portable Charger 20K</p>
+                                <p class="text-sm text-gray-500">2,134 units sold</p>
+                            </div>
+                        </div>
+                        <span class="text-green-600 font-semibold">$42,680</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-red-100 rounded flex items-center justify-center text-red-600 font-semibold">5</div>
+                            <div>
+                                <p class="font-medium text-gray-900">Phone Case Premium</p>
+                                <p class="text-sm text-gray-500">3,421 units sold</p>
+                            </div>
+                        </div>
+                        <span class="text-green-600 font-semibold">$34,210</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Traffic Sources -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Traffic Sources</h2>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Organic Search</span>
+                            <span class="text-sm font-semibold text-gray-900">42.3%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: 42.3%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Direct Traffic</span>
+                            <span class="text-sm font-semibold text-gray-900">28.7%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-600 h-2 rounded-full" style="width: 28.7%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Social Media</span>
+                            <span class="text-sm font-semibold text-gray-900">18.5%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-600 h-2 rounded-full" style="width: 18.5%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Email Campaign</span>
+                            <span class="text-sm font-semibold text-gray-900">6.8%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-orange-600 h-2 rounded-full" style="width: 6.8%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-gray-700">Paid Ads</span>
+                            <span class="text-sm font-semibold text-gray-900">3.7%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: 3.7%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <h3 class="text-sm font-semibold text-gray-900 mb-3">Customer Demographics</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-3 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-gray-900">62%</p>
+                            <p class="text-xs text-gray-500 mt-1">Age 25-34</p>
+                        </div>
+                        <div class="text-center p-3 bg-gray-50 rounded-lg">
+                            <p class="text-2xl font-bold text-gray-900">58%</p>
+                            <p class="text-xs text-gray-500 mt-1">Male</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Orders</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Order ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">#ORD-2451</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">John Smith</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Wireless Earbuds Pro</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Jan 21, 2026</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$49.99</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Delivered</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">#ORD-2450</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Sarah Johnson</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Smart Watch Series 5</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Jan 21, 2026</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$199.00</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Shipped</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">#ORD-2449</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Mike Wilson</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">USB-C Hub 7-in-1</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Jan 20, 2026</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$29.99</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-800 rounded">Processing</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">#ORD-2448</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Emily Davis</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Portable Charger 20K</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Jan 20, 2026</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$39.99</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded">Delivered</span></td>
+                        </tr>
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">#ORD-2447</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">David Brown</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Phone Case Premium</td>
+                            <td class="px-4 py-3 text-sm text-gray-600">Jan 20, 2026</td>
+                            <td class="px-4 py-3 text-sm font-medium text-gray-900">$19.99</td>
+                            <td class="px-4 py-3"><span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Shipped</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: [35000, 42000, 38000, 51000, 48000, 62000, 58000],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgb(59, 130, 246)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: 'rgb(59, 130, 246)',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 3
+                }, {
+                    label: 'Orders',
+                    data: [480, 590, 520, 680, 640, 820, 780],
+                    borderColor: 'rgb(168, 85, 247)',
+                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: 'rgb(168, 85, 247)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointHoverBackgroundColor: 'rgb(168, 85, 247)',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 3,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: {
+                                size: 13,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        padding: 12,
+                        titleFont: {
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            size: 13
+                        },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    if (context.dataset.label === 'Revenue') {
+                                        label += '$' + context.parsed.y.toLocaleString();
+                                    } else {
+                                        label += context.parsed.y.toLocaleString();
+                                    }
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12,
+                                weight: '500'
+                            }
+                        }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            callback: function(value) {
+                                return '$' + (value / 1000) + 'k';
+                            },
+                            padding: 10
+                        },
+                        border: {
+                            display: false
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: {
+                            drawOnChartArea: false,
+                            drawBorder: false
+                        },
+                        ticks: {
+                            font: {
+                                size: 12
+                            },
+                            padding: 10
+                        },
+                        border: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Audio', 'Wearables', 'Accessories', 'Chargers', 'Cases'],
+                datasets: [{
+                    data: [32, 24, 18, 15, 11],
+                    backgroundColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(168, 85, 247)',
+                        'rgb(34, 197, 94)',
+                        'rgb(251, 146, 60)',
+                        'rgb(239, 68, 68)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

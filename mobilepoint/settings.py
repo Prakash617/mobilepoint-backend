@@ -99,7 +99,7 @@ ROOT_URLCONF = "mobilepoint.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR/"templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -505,14 +505,14 @@ DASHUB_SETTINGS = {
             },
         ],
 
-        "tools": [
-            {
-                "name": "File Manager",
-                "url": "/filehub/",
-                "icon": "fa-solid fa-folder",
-                "order": 1,
-            }
-        ],
+        "advance": [
+        {
+            "name": "File Manager",
+            "url": "/filemanager/",
+            "icon": "hgi hgi-stroke hgi-folder-cloud",
+            "order": 1,
+        },
+    ],
     },
 }
 
@@ -531,7 +531,7 @@ TINYMCE_DEFAULT_CONFIG = {
         "wordcount codesample fullscreen code",
     ],
     "image_advtab": False,
-    "external_filemanager_path": "/filehub/select/",
+    "external_filemanager_path": "/admin/filehub/select/",
     "filemanager_title": "Filemanager",
     "external_plugins": {
         "filehub": "/static/filehub/tinymce/plugin.js",

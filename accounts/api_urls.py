@@ -12,8 +12,8 @@ from .api_views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     # CustomTokenObtainPairView,
-    CookieTokenObtainPairView,
-    CookieTokenRefreshView,
+    SessionTokenObtainPairView,
+    SessionTokenRefreshView,
     LogoutView
 )
 urlpatterns = [
@@ -35,10 +35,11 @@ urlpatterns = [
     ),
     # for cookie based api
     # path('cookie/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path("login/", CookieTokenObtainPairView.as_view(), name="login"),
-    path("refresh/", CookieTokenRefreshView.as_view(), name="refresh"),
-    path("verify/", TokenVerifyView.as_view(), name="verify"),
+    path("login/", SessionTokenObtainPairView.as_view(), name="login"),
+    path("refresh/", SessionTokenRefreshView.as_view(), name="refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
+    path("verify/", TokenVerifyView.as_view(), name="verify"),
+    # path("logout/", LogoutView.as_view(), name="logout"),
 ]
 
 

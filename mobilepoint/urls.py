@@ -38,6 +38,7 @@ router = DefaultRouter()
 urlpatterns = [
     path('admin/', include('filehub.urls')),
     path("filemanager/", filehub_embed, name="admin_filehub"),
+    path('auth/', include('accounts.api_urls')),
     path("analytic_dashboard/", analytic_dashboard, name="analytic_dashboard"),
     path('admin/', admin.site.urls),
     path('product/', include('product.api_urls')),

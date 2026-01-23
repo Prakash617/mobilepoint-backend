@@ -47,8 +47,8 @@ INSTALLED_APPS = [
 
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'My API',
-    'DESCRIPTION': 'API documentation for my Django project',
+    'TITLE': 'Mobile Point API',
+    'DESCRIPTION': 'API documentation for my Mobile Point project',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
 }

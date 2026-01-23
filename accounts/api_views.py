@@ -22,9 +22,19 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
 
 
+@extend_schema(
+    tags=["User"],
+    summary="Get or update current user profile",
+    description="Retrieve or update the authenticated user's profile information. Requires access token in Authorization header.",
+    responses={
+        200: UserSerializer,
+        401: OpenApiResponse(description="Unauthorized - Invalid or missing access token"),
+    },
+)
 class MeView(generics.RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -34,6 +44,19 @@ class MeView(generics.RetrieveUpdateAPIView):
         return self.request.user
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Register a new user",
+    description="Create a new user account. A verification email will be sent to the provided email address.",
+    request=RegisterSerializer,
+    responses={
+        201: OpenApiResponse(
+            description="User created successfully",
+            response=RegisterSerializer,
+        ),
+        400: OpenApiResponse(description="Bad request - Validation errors"),
+    },
+)
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
@@ -52,6 +75,24 @@ class RegisterView(generics.CreateAPIView):
             status=status.HTTP_201_CREATED,
         )
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Verify email address",
+    description="Verify user email address using the token sent via email.",
+    parameters=[
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.QUERY,
+            required=True,
+            description="Email verification token",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(description="Email successfully verified"),
+        400: OpenApiResponse(description="Invalid or expired token"),
+    },
+)
 class VerifyEmailView(views.APIView):
     permission_classes = (AllowAny,)
 
@@ -78,6 +119,17 @@ class VerifyEmailView(views.APIView):
             )
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Resend verification email",
+    description="Resend the email verification link to the user's email address.",
+    request=ResendVerificationEmailSerializer,
+    responses={
+        200: OpenApiResponse(description="Verification email resent successfully"),
+        400: OpenApiResponse(description="Account already verified"),
+        404: OpenApiResponse(description="User not found"),
+    },
+)
 class ResendVerificationEmailView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = ResendVerificationEmailSerializer
@@ -121,6 +173,16 @@ class ResendVerificationEmailView(generics.GenericAPIView):
         )
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Request password reset",
+    description="Send a password reset link to the user's email address.",
+    request=PasswordResetRequestSerializer,
+    responses={
+        200: OpenApiResponse(description="Password reset email sent"),
+        404: OpenApiResponse(description="User with this email does not exist"),
+    },
+)
 class PasswordResetRequestView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PasswordResetRequestSerializer
@@ -159,6 +221,32 @@ class PasswordResetRequestView(generics.GenericAPIView):
         )
 
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Confirm password reset",
+    description="Reset user password using the token and uidb64 from the reset link.",
+    request=PasswordResetConfirmSerializer,
+    parameters=[
+        OpenApiParameter(
+            name="uidb64",
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Base64 encoded user ID",
+        ),
+        OpenApiParameter(
+            name="token",
+            type=str,
+            location=OpenApiParameter.PATH,
+            required=True,
+            description="Password reset token",
+        ),
+    ],
+    responses={
+        200: OpenApiResponse(description="Password reset successfully"),
+        400: OpenApiResponse(description="Invalid token or user ID"),
+    },
+)
 class PasswordResetConfirmView(generics.GenericAPIView):
     permission_classes = (AllowAny,)
     serializer_class = PasswordResetConfirmSerializer
@@ -190,66 +278,153 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
 
 
-class CookieTokenObtainPairView(TokenObtainPairView):
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.response import Response
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Login and obtain access token",
+    description="""Authenticate user and obtain access token.
+    
+    **Authentication Flow:**
+    - Refresh token is stored in Django session (server-side)
+    - Only access token is returned to the client
+    - Session expires after 7 days
+    
+    **Usage:**
+    - Send username/email and password
+    - Receive access token
+    - Use access token in Authorization header: `Bearer <token>`
+    """,
+    responses={
+        200: OpenApiResponse(
+            description="Login successful",
+            response={
+                "type": "object",
+                "properties": {
+                    "access": {"type": "string", "description": "JWT access token"}
+                },
+            },
+        ),
+        401: OpenApiResponse(description="Invalid credentials"),
+    },
+)
+class SessionTokenObtainPairView(TokenObtainPairView):
+    """
+    Login:
+    - Refresh token stored in Django session
+    - Only access token returned to client
+    """
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
-        refresh = response.data["refresh"]
-        access = response.data["access"]
 
-        response.set_cookie(
-            key="refresh_token",
-            value=refresh,
-            httponly=True,
-            secure=False, # For development
-            samesite="lax",
-            max_age=7 * 24 * 60 * 60,
-            path="/",
-        )
-        del response.data["refresh"]
+        refresh = response.data.get("refresh")
+        access = response.data.get("access")
+
+        # Store refresh token in session
+        request.session["refresh_token"] = refresh
+        request.session.set_expiry(7 * 24 * 60 * 60)  # 7 days
+
+        # Remove refresh token from response
+        response.data = {
+            "access": access
+        }
+
         return response
 
 
-class CookieTokenRefreshView(TokenRefreshView):
+from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.response import Response
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Refresh access token",
+    description="""Refresh the access token using the refresh token stored in Django session.
+    
+    **How it works:**
+    - Refresh token is automatically retrieved from session (no need to send it)
+    - Returns a new access token
+    - Session must be valid (not expired)
+    """,
+    request=None,
+    responses={
+        200: OpenApiResponse(
+            description="Token refreshed successfully",
+            response={
+                "type": "object",
+                "properties": {
+                    "access": {"type": "string", "description": "New JWT access token"}
+                },
+            },
+        ),
+        401: OpenApiResponse(description="No refresh token in session or session expired"),
+    },
+)
+class SessionTokenRefreshView(TokenRefreshView):
+    """
+    Refresh access token using refresh token from session
+    """
+
     def post(self, request, *args, **kwargs):
-        refresh_token = request.COOKIES.get("refresh_token")
-        if refresh_token:
-            request.data["refresh"] = refresh_token
-        response = super().post(request, *args, **kwargs)
-        if "refresh" in response.data:
-            access = response.data["access"]
-            response.set_cookie(
-                key="refresh_token",
-                value=response.data["refresh"],
-                httponly=True,
-                # secure=True,
-                secure=False,         #for development
-                samesite="lax",
-                max_age=7 * 24 * 60 * 60,
-                path="/",
+        refresh = request.session.get("refresh_token")
+
+        if not refresh:
+            return Response(
+                {"detail": "No refresh token in session"},
+                status=401
             )
-           
+
+        request.data["refresh"] = refresh
+        response = super().post(request, *args, **kwargs)
+
+        # Rotate refresh token if enabled
+        if "refresh" in response.data:
+            request.session["refresh_token"] = response.data["refresh"]
             del response.data["refresh"]
+
         return response
+
     
 # auth/views.py
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+@extend_schema(
+    tags=["Auth"],
+    summary="Logout user",
+    description="""Logout the current user by invalidating the session.
+    
+    **Actions performed:**
+    - Blacklists the refresh token (if token blacklisting is enabled)
+    - Clears the Django session
+    - Requires valid access token in Authorization header
+    """,
+    request=None,
+    responses={
+        205: OpenApiResponse(description="Logged out successfully"),
+        401: OpenApiResponse(description="Unauthorized - Invalid or missing access token"),
+    },
+)
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        refresh = request.COOKIES.get("refresh_token")
-        if not refresh:
-            return Response({"detail": "No refresh token"}, status=400)
+        refresh = request.session.get("refresh_token")
 
-        try:
-            token = RefreshToken(refresh)
-            token.blacklist()
-            response = Response({"detail": "Logged out"}, status=205)
-            response.delete_cookie("refresh_token")
-            response.delete_cookie("access_token")
-            return response
-        except Exception as e:
-            return Response({"error": str(e)}, status=400)
+        if refresh:
+            try:
+                token = RefreshToken(refresh)
+                token.blacklist()
+            except Exception:
+                pass
+
+        request.session.flush()  # clears entire session
+
+        return Response(
+            {"detail": "Logged out successfully"},
+            status=205
+        )

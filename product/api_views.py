@@ -545,8 +545,8 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
             for attr_name, attr_value in attributes.items():
                 variants = variants.filter(
-                    attribute_values__attribute_value__attribute__name=attr_name,
-                    attribute_values__attribute_value__value=attr_value,
+                    variant_attributes__attribute__name=attr_name,
+                    variant_attributes__value=attr_value,
                 )
 
             variant = variants.first()
@@ -571,7 +571,7 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
         ProductVariant.objects.filter(is_active=True)
         .select_related("product")
-        .prefetch_related("attribute_values", "images")
+        .prefetch_related("variant_attributes", "images")
     )
     serializer_class = ProductVariantDetailSerializer
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]

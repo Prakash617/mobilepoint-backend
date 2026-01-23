@@ -4,8 +4,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.sites.models import Site # Import Site model
-
+from django.contrib.sites.models import Site   # Import Site model
 from .models import User
 
 @receiver(post_save, sender=User)

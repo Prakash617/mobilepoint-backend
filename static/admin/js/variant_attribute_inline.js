@@ -26,14 +26,20 @@ document.addEventListener('DOMContentLoaded', function () {
             thColor.style.display = 'none';
             thImage.style.display = 'none';
 
-            // Show only relevant cell and header
+            // Show relevant cells and headers
             if (type === 'text') {
                 if (valueCell) valueCell.style.display = 'table-cell';
                 if (thValue) thValue.style.display = 'table-cell';
             } else if (type === 'color') {
+                // Show both value and color fields
+                if (valueCell) valueCell.style.display = 'table-cell';
+                if (thValue) thValue.style.display = 'table-cell';
                 if (colorCell) colorCell.style.display = 'table-cell';
                 if (thColor) thColor.style.display = 'table-cell';
             } else if (type === 'image') {
+                // Show both value and image fields
+                if (valueCell) valueCell.style.display = 'table-cell';
+                if (thValue) thValue.style.display = 'table-cell';
                 if (imageCell) imageCell.style.display = 'table-cell';
                 if (thImage) thImage.style.display = 'table-cell';
             }

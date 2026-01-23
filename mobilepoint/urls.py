@@ -28,6 +28,11 @@ from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from product.api_views import ProductViewSet
 from .admin_views import filehub_embed, analytic_dashboard
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularSwaggerView,
+    SpectacularRedocView,
+)
 router = DefaultRouter()
 
 urlpatterns = [
@@ -52,6 +57,16 @@ urlpatterns = [
     # Optional: Django REST Framework browsable API authentication
     path('api-auth/', include('rest_framework.urls')),
     path('tinymce/', include('tinymce.urls')),
+    
+    
+    # OpenAPI schema
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+
+    # Swagger UI
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+
+    # ReDoc UI (optional)
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 # Serve media files in development

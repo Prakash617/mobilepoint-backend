@@ -190,12 +190,10 @@ class VariantAttributeValue(models.Model):
         elif self.types == 'color':
             if not self.color_code:
                 raise ValidationError({'color_code': 'This field is required when type is "Color".'})
-            self.value = None
             self.image = None
         elif self.types == 'image':
             if not self.image:
                 raise ValidationError({'image': 'This field is required when type is "Image".'})
-            self.value = None
             self.color_code = None
 
 class ProductVariant(models.Model):

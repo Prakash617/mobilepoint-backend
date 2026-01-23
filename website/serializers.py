@@ -35,10 +35,10 @@ class AdvertisementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Advertisement
         fields = [
-            'id', 'title', 'ad_type', 'position', 'image', 'mobile_image',
-            'video_url', 'html_content', 'link_url', 'open_in_new_tab',
-            'is_active', 'start_date', 'end_date', 'show_on_mobile',
-            'show_on_desktop', 'max_impressions', 'current_impressions',
+            'id', 'title', 'ad_type', 'position', 'image',
+            'link_url', 'open_in_new_tab',
+            'is_active', 'start_date', 'end_date',
+            'max_impressions', 'current_impressions',
             'click_count', 'ctr', 'is_valid', 'order'
         ]
         read_only_fields = ['current_impressions', 'click_count']

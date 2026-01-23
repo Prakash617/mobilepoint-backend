@@ -40,8 +40,8 @@ class VariantAttributeValueForm(forms.ModelForm):
             'color_code': ColorPickerWidget(),
         }
 
-    class Media:
-        js = ("admin/js/variant_attribute_value.js",)
+    # class Media:
+    #     js = ("admin/js/variant_attribute_value.js",)
     
     def clean_color_code(self):
         """Validate and format color code"""

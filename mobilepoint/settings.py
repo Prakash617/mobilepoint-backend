@@ -71,6 +71,16 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "100/hour",  # Anonymous users: 100 requests per hour
+        "user": "1000/hour",  # Authenticated users: 1000 requests per hour
+        "auth": "5/minute",  # Auth endpoints: 5 requests per minute
+        "password_reset": "3/hour",  # Password reset: 3 requests per hour
+    },
 }
 
 # JWT Configuration
@@ -331,11 +341,11 @@ DASHUB_SETTINGS = {
     # Hidden models
     # --------------------------------------------------
     "hide_models": [
-        "auth",
+        # "auth",
         "auth.group",
-        "accounts",
-        "accounts.user",
-        "accounts.usergroup",
+        # "accounts",
+        # "accounts.user",
+        # "accounts.usergroup",
 
         "product",
         "product.category",
@@ -482,6 +492,21 @@ DASHUB_SETTINGS = {
                     # {"model": "product.frequentlyboughttogether", "order": 3},
                 ],
             },
+        ],
+        "Order": [
+            {
+                "name": "Orders",
+                "icon": "hgi hgi-stroke hgi-list-view",
+                "url": "/admin/orders/content/",
+                "submenu": [
+                
+                    {"model": "orders.order", "order": 1},
+                    {"model": "orders.orderitem", "order": 2},
+                    
+                ],
+            },
+        
+        
         ],
 
         "website": [

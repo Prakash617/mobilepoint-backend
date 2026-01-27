@@ -15,7 +15,7 @@ class OrderStatusHistoryInline(admin.TabularInline):
 class OrderAdmin(admin.ModelAdmin):
     list_display = ['order_number', 'user', 'status', 'payment_status', 'total', 'created_at']
     list_filter = ['status', 'payment_status', 'created_at']
-    search_fields = ['order_number', 'user__username', 'user__email', 'shipping_email']
+    search_fields = ['order_number', 'user__email', 'shipping_email']
     readonly_fields = ['order_number', 'created_at', 'updated_at']
     inlines = [OrderItemInline, OrderStatusHistoryInline]
     
@@ -28,12 +28,12 @@ class OrderAdmin(admin.ModelAdmin):
         }),
         ('Shipping Information', {
             'fields': ('shipping_name', 'shipping_email', 'shipping_phone', 
-                      'shipping_address', 'shipping_city', 'shipping_state', 
-                      'shipping_zip', 'shipping_country', 'tracking_number')
+                    'shipping_address', 'shipping_city', 'shipping_state', 
+                    'shipping_zip', 'shipping_country', 'tracking_number')
         }),
         ('Billing Information', {
             'fields': ('billing_name', 'billing_address', 'billing_city', 
-                      'billing_state', 'billing_zip', 'billing_country')
+                    'billing_state', 'billing_zip', 'billing_country')
         }),
         ('Timestamps', {
             'fields': ('created_at', 'updated_at')

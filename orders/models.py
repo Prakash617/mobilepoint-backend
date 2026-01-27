@@ -69,7 +69,7 @@ class Order(models.Model):
             models.Index(fields=['user', '-created_at']),
         ]
         verbose_name = "Order"
-        verbose_name_plural = "Orders"
+        verbose_name_plural = "Order"
 
     def __str__(self):
         return f"Order {self.order_number}"

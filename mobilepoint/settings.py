@@ -101,6 +101,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "https://api.gowell.edu.np",
     "https://mobilepoint-seven.vercel.app",
+    "mobilepoint.sayathari.com"
 ]
 
 CSRF_COOKIE_SECURE = False

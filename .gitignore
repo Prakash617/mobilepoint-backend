@@ -95,6 +95,27 @@ htmlcov/
 # Docker (optional)
 # ======================
 docker-compose.override.yml
+.dockerignore
+
+# Docker volumes and data
+postgres_data/
+static_volume/
+media_volume/
+
+# ======================
+# Database
+# ======================
+*.sqlite3
+*.db
+db.sqlite3
+*.db-journal
+
+# ======================
+# Environment Variables
+# ======================
+.env
+.env.*
+!.env.example
 
 # ======================
 # Logs

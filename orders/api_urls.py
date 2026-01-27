@@ -13,5 +13,5 @@ app_name = 'orders'
 
 urlpatterns = [
     # API endpoints
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
 ]

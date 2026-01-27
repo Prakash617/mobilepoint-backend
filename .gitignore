@@ -7,8 +7,8 @@
 *.pid.lock
 .DS_Store
 Thumbs.db
-**/migrations/*.py
-**/migrations/__pycache__/
+# **/migrations/*.py
+# **/migrations/__pycache__/
 me.txt
 server.sh
 

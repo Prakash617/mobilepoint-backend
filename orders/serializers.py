@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import Order, OrderItem, OrderStatusHistory
 from accounts.models import User
 
-class UserSerializer(serializers.ModelSerializer):
+class OrderUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
@@ -34,7 +34,7 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 
 
 class OrderListSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = OrderUserSerializer(read_only=True)
     items_count = serializers.IntegerField(source='items.count', read_only=True)
     
     class Meta:
@@ -47,7 +47,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+    user = OrderUserSerializer(read_only=True)
     items = OrderItemSerializer(many=True, read_only=True)
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
     

@@ -11,7 +11,7 @@ services:
     environment:
       - DJANGO_SETTINGS_MODULE=mobilepoint.settings
     volumes:
-      - static_volume:/app/public/static
+      - static_volume:/app/public/staticfiles
       - media_volume:/app/media
     ports:
       - "8001:8001"

@@ -1,20 +1,10 @@
 #!/bin/bash
 set -e
 
-# Default Django settings
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-mobilepoint.settings}
 echo "Using Django settings: $DJANGO_SETTINGS_MODULE"
 
-# Wait for PostgreSQL to be ready
-if [ -n "$DB_HOST" ] && [ -n "$DB_PORT" ]; then
-  echo "Waiting for PostgreSQL at $DB_HOST:$DB_PORT..."
-  until nc -z "$DB_HOST" "$DB_PORT"; do
-    sleep 1
-  done
-  echo "PostgreSQL is up!"
-fi
-
-# Run migrations and collectstatic as app user
+# Run migrations only for backend service
 if [ "$(id -u)" = "0" ]; then
     echo "Running migrations as app user..."
     su -s /bin/bash app -c "python manage.py migrate --noinput"

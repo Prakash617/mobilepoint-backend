@@ -13,11 +13,13 @@ django-tinymce==5.0.0
 djangorestframework==3.16.1
 djangorestframework-simplejwt==5.5.1
 drf-spectacular==0.29.0
+gunicorn==24.1.1
 h11==0.16.0
 idna==3.11
 inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
+packaging==26.0
 pillow==12.0.0
 psycopg2-binary==2.9.11
 pyjwt==2.10.1
@@ -32,4 +34,3 @@ standard-imghdr==3.13.0
 typing-extensions==4.15.0
 uritemplate==4.2.0
 urllib3==2.6.2
-uvicorn==0.40.0

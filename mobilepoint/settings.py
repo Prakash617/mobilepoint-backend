@@ -13,7 +13,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-smj3k7)x+j#onq0_$huba-5_9xp=v+kords^n5diz02yw1wpr8"
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", default=False)
@@ -47,8 +47,10 @@ INSTALLED_APPS = [
     "reviews",
     "nested_admin",
     'drf_spectacular',
+    'menu',
 ]
 
+SITE_URL = "http://127.0.0.1:8000" if DEBUG else "https://mobilepoint.sayathari.com"
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Mobile Point API',
@@ -96,12 +98,9 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings (adjust for production)
+# Get the string and split it into a list
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "https://api.gowell.edu.np",
-    "https://mobilepoint-seven.vercel.app",
-    "https://mobilepoint.sayathari.com"
+    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 ]
 
 
@@ -143,23 +142,23 @@ WSGI_APPLICATION = "mobilepoint.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT"),
-    }
-}
-
 # DATABASES = {
 #     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3"
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": os.environ.get("DB_NAME"),
+#         "USER": os.environ.get("DB_USER"),
+#         "PASSWORD": os.environ.get("DB_PASSWORD"),
+#         "HOST": os.environ.get("DB_HOST"),
+#         "PORT": os.environ.get("DB_PORT"),
 #     }
 # }
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3"
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -463,6 +462,10 @@ DASHUB_SETTINGS = {
         "website.carousel": "hgi hgi-stroke hgi-carousel-horizontal",
         "website.advertisement": "hgi hgi-stroke hgi-advertisiment",
         "website.sitesettings": "hgi hgi-stroke hgi-settings-02",
+        
+        "menu.page": "hgi hgi-stroke hgi-file-01",
+        "menu.menu": "hgi hgi-stroke hgi-menu-01",
+        "menu.menuitem": "hgi hgi-stroke hgi-list",
     },
 
     # --------------------------------------------------

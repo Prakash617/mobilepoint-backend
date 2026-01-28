@@ -83,11 +83,11 @@ class Order(models.Model):
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
-    product_variant = models.ForeignKey('product.ProductVariant', on_delete=models.PROTECT)
+    product = models.ForeignKey('product.Product', on_delete=models.PROTECT, null=True, blank=True)
+    product_variant = models.ForeignKey('product.ProductVariant', on_delete=models.PROTECT, null=True, blank=True)
 
     product_name = models.CharField(max_length=200)
-    variant_name = models.CharField(max_length=200)
-    sku = models.CharField(max_length=100)
+    variant_name = models.CharField(max_length=200, blank=True, null=True)
 
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
@@ -102,7 +102,9 @@ class OrderItem(models.Model):
         verbose_name_plural = "Order Items"
 
     def __str__(self):
-        return f"{self.product_name} - {self.variant_name} x{self.quantity}"
+        if self.variant_name:
+            return f"{self.product_name} - {self.variant_name} x{self.quantity}"
+        return f"{self.product_name} x{self.quantity}"
 
     def save(self, *args, **kwargs):
         self.subtotal = self.price * self.quantity

@@ -1,0 +1,155 @@
+/* Style for order status radio buttons */
+.field-status .radiolist {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.field-status .radiolist label {
+    display: inline-flex;
+    align-items: center;
+    padding: 8px 16px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: #f9f9f9;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    user-select: none;
+}
+
+.field-status .radiolist input[type="radio"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* Status-specific button colors */
+.field-status .radiolist label:has(input[value="pending"]) {
+    border-color: #FFA500;
+    color: #FFA500;
+}
+
+.field-status .radiolist label:has(input[value="pending"]):hover {
+    background-color: #FFA500;
+    color: white;
+}
+
+.field-status .radiolist input[value="pending"]:checked ~ label,
+.field-status .radiolist label:has(input[value="pending"]:checked) {
+    background-color: #FFA500;
+    color: white;
+    border-color: #FFA500;
+}
+
+.field-status .radiolist label:has(input[value="confirmed"]) {
+    border-color: #4169E1;
+    color: #4169E1;
+}
+
+.field-status .radiolist label:has(input[value="confirmed"]):hover {
+    background-color: #4169E1;
+    color: white;
+}
+
+.field-status .radiolist input[value="confirmed"]:checked ~ label,
+.field-status .radiolist label:has(input[value="confirmed"]:checked) {
+    background-color: #4169E1;
+    color: white;
+    border-color: #4169E1;
+}
+
+.field-status .radiolist label:has(input[value="processing"]) {
+    border-color: #9370DB;
+    color: #9370DB;
+}
+
+.field-status .radiolist label:has(input[value="processing"]):hover {
+    background-color: #9370DB;
+    color: white;
+}
+
+.field-status .radiolist input[value="processing"]:checked ~ label,
+.field-status .radiolist label:has(input[value="processing"]:checked) {
+    background-color: #9370DB;
+    color: white;
+    border-color: #9370DB;
+}
+
+.field-status .radiolist label:has(input[value="shipped"]) {
+    border-color: #20B2AA;
+    color: #20B2AA;
+}
+
+.field-status .radiolist label:has(input[value="shipped"]):hover {
+    background-color: #20B2AA;
+    color: white;
+}
+
+.field-status .radiolist input[value="shipped"]:checked ~ label,
+.field-status .radiolist label:has(input[value="shipped"]:checked) {
+    background-color: #20B2AA;
+    color: white;
+    border-color: #20B2AA;
+}
+
+.field-status .radiolist label:has(input[value="delivered"]) {
+    border-color: #228B22;
+    color: #228B22;
+}
+
+.field-status .radiolist label:has(input[value="delivered"]):hover {
+    background-color: #228B22;
+    color: white;
+}
+
+.field-status .radiolist input[value="delivered"]:checked ~ label,
+.field-status .radiolist label:has(input[value="delivered"]:checked) {
+    background-color: #228B22;
+    color: white;
+    border-color: #228B22;
+}
+
+.field-status .radiolist label:has(input[value="cancelled"]) {
+    border-color: #DC143C;
+    color: #DC143C;
+}
+
+.field-status .radiolist label:has(input[value="cancelled"]):hover {
+    background-color: #DC143C;
+    color: white;
+}
+
+.field-status .radiolist input[value="cancelled"]:checked ~ label,
+.field-status .radiolist label:has(input[value="cancelled"]:checked) {
+    background-color: #DC143C;
+    color: white;
+    border-color: #DC143C;
+}
+
+.field-status .radiolist label:has(input[value="refunded"]) {
+    border-color: #FF69B4;
+    color: #FF69B4;
+}
+
+.field-status .radiolist label:has(input[value="refunded"]):hover {
+    background-color: #FF69B4;
+    color: white;
+}
+
+.field-status .radiolist input[value="refunded"]:checked ~ label,
+.field-status .radiolist label:has(input[value="refunded"]:checked) {
+    background-color: #FF69B4;
+    color: white;
+    border-color: #FF69B4;
+}
+
+/* Improve hover effect */
+.field-status .radiolist label:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.field-status .radiolist input[type="radio"]:checked + label {
+    font-weight: bold;
+}

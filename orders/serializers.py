@@ -3,28 +3,60 @@ from .models import Order, OrderItem, OrderStatusHistory
 from accounts.models import User
 
 class OrderUserSerializer(serializers.ModelSerializer):
+    """
+    Serializer for displaying user information within orders.
+    
+    Fields:
+    - id: User ID
+    - username: User's username
+    - email: User's email address
+    - first_name: User's first name
+    - last_name: User's last name
+    """
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        read_only_fields = ['id', 'username', 'email', 'first_name', 'last_name']
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    """Serializer for displaying order items with product/variant details"""
     class Meta:
         model = OrderItem
         fields = [
-            'id', 'product_variant', 'product_name', 'variant_name', 
-            'sku', 'quantity', 'price', 'subtotal', 'created_at'
+            'id', 'product', 'product_variant', 'product_name', 'variant_name', 
+            'quantity', 'price', 'subtotal', 'created_at'
         ]
-        read_only_fields = ['subtotal', 'product_name', 'variant_name', 'sku', 'created_at']
+        
+        read_only_fields = ['subtotal', 'product_name', 'variant_name', 'created_at']
 
 
 class OrderItemCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating order items. Supports both products and variants."""
     class Meta:
         model = OrderItem
-        fields = ['product_variant', 'quantity']
+        fields = ['product', 'product_variant', 'quantity']
+    
+    def validate(self, data):
+        """Validate that either product or product_variant is provided, not both"""
+        product = data.get('product')
+        product_variant = data.get('product_variant')
+        
+        if not product and not product_variant:
+            raise serializers.ValidationError(
+                "Either 'product' or 'product_variant' must be provided."
+            )
+        
+        if product and product_variant:
+            raise serializers.ValidationError(
+                "Provide either 'product' or 'product_variant', not both."
+            )
+        
+        return data
 
 
 class OrderStatusHistorySerializer(serializers.ModelSerializer):
+    """Serializer for order status history tracking changes"""
     created_by_name = serializers.CharField(source='created_by.username', read_only=True)
     
     class Meta:
@@ -34,6 +66,7 @@ class OrderStatusHistorySerializer(serializers.ModelSerializer):
 
 
 class OrderListSerializer(serializers.ModelSerializer):
+    """Serializer for listing orders with summary information"""
     user = OrderUserSerializer(read_only=True)
     items_count = serializers.IntegerField(source='items.count', read_only=True)
     
@@ -47,6 +80,7 @@ class OrderListSerializer(serializers.ModelSerializer):
 
 
 class OrderDetailSerializer(serializers.ModelSerializer):
+    """Serializer for detailed order information including items and status history"""
     user = OrderUserSerializer(read_only=True)
     items = OrderItemSerializer(many=True, read_only=True)
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
@@ -69,6 +103,46 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 
 
 class OrderCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating new orders.
+    
+    This serializer handles the creation of orders with items.
+    It automatically:
+    - Calculates subtotal from items
+    - Applies 10% tax
+    - Adds flat $10 shipping cost
+    - Creates initial order status history
+    - Associates order with authenticated user
+    
+    Request Example:
+    {
+        "items": [
+            {
+                "product": 1,
+                "quantity": 2
+            },
+            {
+                "product_variant": 5,
+                "quantity": 1
+            }
+        ],
+        "shipping_name": "John Doe",
+        "shipping_email": "john@example.com",
+        "shipping_phone": "+1234567890",
+        "shipping_address": "123 Main St",
+        "shipping_city": "New York",
+        "shipping_state": "NY",
+        "shipping_zip": "10001",
+        "shipping_country": "USA",
+        "billing_name": "John Doe",
+        "billing_address": "123 Main St",
+        "billing_city": "New York",
+        "billing_state": "NY",
+        "billing_zip": "10001",
+        "billing_country": "USA",
+        "notes": "Please deliver after 5pm"
+    }
+    """
     items = OrderItemCreateSerializer(many=True, write_only=True)
     
     class Meta:
@@ -94,14 +168,25 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             order_items = []
             
             for item_data in items_data:
-                variant = item_data['product_variant']
+                product = item_data.get('product')
+                variant = item_data.get('product_variant')
                 quantity = item_data['quantity']
-                price = variant.price
+                
+                # Determine price based on product or variant
+                if variant:
+                    price = variant.price
+                    product_obj = variant.product
+                else:
+                    price = product.base_price
+                    product_obj = product
+                
                 item_subtotal = price * quantity
                 subtotal += item_subtotal
                 
                 order_items.append({
+                    'product': product,
                     'variant': variant,
+                    'product_obj': product_obj,
                     'quantity': quantity,
                     'price': price,
                     'subtotal': item_subtotal
@@ -123,15 +208,20 @@ class OrderCreateSerializer(serializers.ModelSerializer):
             
             # Create order items
             for item in order_items:
-                OrderItem.objects.create(
-                    order=order,
-                    product_variant=item['variant'],
-                    product_name=item['variant'].product.name,
-                    variant_name=item['variant'].name,
-                    sku=item['variant'].sku,
-                    quantity=item['quantity'],
-                    price=item['price']
-                )
+                order_item_kwargs = {
+                    'order': order,
+                    'product_name': item['product_obj'].name,
+                    'quantity': item['quantity'],
+                    'price': item['price']
+                }
+                
+                if item['variant']:
+                    order_item_kwargs['product_variant'] = item['variant']
+                    order_item_kwargs['variant_name'] = item['variant'].__str__()  # Use variant's __str__ method
+                else:
+                    order_item_kwargs['product'] = item['product']
+                
+                OrderItem.objects.create(**order_item_kwargs)
             
             # Create initial status history
             OrderStatusHistory.objects.create(

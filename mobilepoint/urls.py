@@ -48,6 +48,7 @@ urlpatterns = [
     path('wishlist/', include('wishlist.api_urls')),
     path('website/', include('website.api_urls')),
     path('reviews/', include('reviews.api_urls')),
+    path('menu/', include('menu.api_urls')),
     
      # ------------------jwt------------
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

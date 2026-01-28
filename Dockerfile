@@ -35,10 +35,10 @@ RUN pip install --no-cache /wheels/*
 
 COPY . .
 
-RUN mkdir -p /app/public/static \
+RUN mkdir -p /app/public/staticfiles \
     && mkdir -p /app/media/uploads \
     && chown -R app:app /app \
-    && chmod -R 775 /app/public/static /app/media
+    && chmod -R 775 /app/public/staticfiles /app/media
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \

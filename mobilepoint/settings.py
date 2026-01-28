@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'menu',
 ]
 
-SITE_URL = "http://127.0.0.1:8000" if DEBUG else "https://mobilepoint.sayathari.com"
+# SITE_URL = "http://127.0.0.1:8000" if DEBUG else "https://mobilepoint.sayathari.com"
+SITE_URL = os.getenv("SITE_URL")
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Mobile Point API',
@@ -104,6 +105,10 @@ CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
 ]
 
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+]
+
 
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
@@ -142,24 +147,28 @@ WSGI_APPLICATION = "mobilepoint.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
+DB_ENGINE = os.environ.get('DB_ENGINE', default='django.db.backends.sqlite3')
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.environ.get("DB_NAME"),
-        "USER": os.environ.get("DB_USER"),
-        "PASSWORD": os.environ.get("DB_PASSWORD"),
-        "HOST": os.environ.get("DB_HOST"),
-        "PORT": os.environ.get("DB_PORT"),
+if DB_ENGINE == 'django.db.backends.postgresql':
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.environ.get("DB_NAME"),
+            "USER": os.environ.get("DB_USER"),
+            "PASSWORD": os.environ.get("DB_PASSWORD"),
+            "HOST": os.environ.get("DB_HOST"),
+            "PORT": os.environ.get("DB_PORT"),
+        }
     }
-}
+else:
+    # SQLite configuration for local development
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.sqlite3",
-#         "NAME": BASE_DIR / "db.sqlite3"
-#     }
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators

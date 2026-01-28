@@ -44,7 +44,7 @@ COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh \
     && chown app:app /entrypoint.sh
 
-EXPOSE 8000
+EXPOSE 8001
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "mobilepoint.wsgi:application", "-w", "2", "-b", "0.0.0.0:8000"]
+CMD ["gunicorn", "mobilepoint.wsgi:application", "-w", "2", "-b", "0.0.0.0:8001"]

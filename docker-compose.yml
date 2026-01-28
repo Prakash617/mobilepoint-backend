@@ -14,7 +14,7 @@ services:
       - static_volume:/app/public/static
       - media_volume:/app/media
     ports:
-      - "8000:8000"
+      - "8000:8001"
     networks:
       - dokploy-network
     restart: unless-stopped

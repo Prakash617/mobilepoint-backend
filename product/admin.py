@@ -5,9 +5,10 @@ from .models import (
     ProductVariant,
     # ProductVariantAttributeValue, 
     ProductImage, ProductPromotion,
-    FrequentlyBoughtTogether,
+    ProductCombo,
+    ProductComboItem,
     # ProductComparison,
-    Deal,RecentlyViewedProduct
+    Deal, RecentlyViewedProduct
     )
 from reviews.models import ProductReview
 from django import forms
@@ -603,19 +604,15 @@ class DealAdmin(admin.ModelAdmin):
         'title',
         'deal_type',
         'product',
-        'variant',
-        'original_price',
-        'discounted_price',
-        'discount_percentage',
-        'start_date',
-        'end_date',
+        'discount_percent',
+        'inventory_progress',
+        'stats_display',
+        'extras_display',
+        'start_at',
+        'end_at',
         'is_active',
         'is_featured',
-        'remaining_quantity',
-        'is_sold_out',
-        'free_gift',
-        'gift_message',
-        'sold_quantity',
+        'display_order',
         'action_buttons',
     )
     
@@ -623,50 +620,69 @@ class DealAdmin(admin.ModelAdmin):
         'deal_type',
         'is_active',
         'is_featured',
-        'start_date',
-        'end_date',
-        'product'
+        'free_shipping',
+        'start_at',
+        'end_at',
     )
     
-    search_fields = ('title', 'product__name',)
+    search_fields = ('title', 'product__name')
     
-    prepopulated_fields = {'slug': ('title',)}
-    
-    list_editable = ('discounted_price', 'is_active','sold_quantity', 'is_featured')
+    list_editable = ('is_active', 'is_featured', 'display_order')
     
     fieldsets = (
         ('Deal Info', {
-            'fields': ('title', 'slug', 'deal_type', 'product', 'variant', 'description', 'terms_and_conditions')
-        }),
-        ('Pricing', {
-            'fields': ('original_price', 'discounted_price', 'discount_percentage')
+            'fields': ('title', 'deal_type', 'product', 'discount_percent')
         }),
         ('Inventory', {
-            'fields': ('total_quantity', 'sold_quantity', 'max_quantity_per_order')
+            'fields': ('total_quantity', 'sold_quantity')
+        }),
+        ('Statistics', {
+            'fields': ('views', 'purchases'),
+            'classes': ('collapse',)
+        }),
+        ('Extra Benefits', {
+            'fields': ('free_shipping', 'free_gift_text'),
+            'classes': ('collapse',)
         }),
         ('Timing', {
-            'fields': ('start_date', 'end_date')
+            'fields': ('start_at', 'end_at')
         }),
-        ('Display & Badge', {
-            'fields': ('badge_text', 'badge_color', 'highlight_features', 'is_featured', 'display_order')
-        }),
-        ('Shipping', {
-            'fields': ('free_shipping', 'shipping_message','free_gift', 'gift_message')
-        }),
-        ('Analytics', {
-            'fields': ('view_count', 'click_count')
+        ('Status', {
+            'fields': ('is_active', 'is_featured', 'display_order')
         }),
     )
     
-    readonly_fields = (
-        'discount_percentage',
-        'view_count',
-        'click_count',
-        'remaining_quantity',
-        'is_sold_out'
-    )
+    readonly_fields = ('views', 'purchases', 'created_at', 'updated_at')
     
-    ordering = ('-is_featured', 'display_order', '-created_at')
+    def inventory_progress(self, obj):
+        """Display inventory progress as a readable string"""
+        return format_html(
+            '<span title="Progress: {}%">{}/{}</span>',
+            obj.progress_percentage,
+            obj.sold_quantity,
+            obj.total_quantity
+        )
+    inventory_progress.short_description = 'Inventory'
+    
+    def stats_display(self, obj):
+        """Display views and purchases stats"""
+        return format_html(
+            '<span style="background:#e3f2fd;padding:3px 8px;border-radius:3px;margin-right:5px;">👁️ {}</span>'
+            '<span style="background:#e8f5e9;padding:3px 8px;border-radius:3px;">🛒 {}</span>',
+            obj.views,
+            obj.purchases
+        )
+    stats_display.short_description = 'Stats (Views/Purchases)'
+    
+    def extras_display(self, obj):
+        """Display extra benefits"""
+        extras = []
+        if obj.free_shipping:
+            extras.append('<span style="background:#fff3e0;padding:3px 8px;border-radius:3px;">🚚 Free Shipping</span>')
+        if obj.free_gift_text:
+            extras.append(f'<span style="background:#fce4ec;padding:3px 8px;border-radius:3px;">🎁 {obj.free_gift_text}</span>')
+        return format_html(' '.join(extras)) if extras else '-'
+    extras_display.short_description = 'Extra Benefits'
     
     def action_buttons(self, obj):
         edit_url = reverse('admin:product_deal_change', args=[obj.id])
@@ -694,35 +710,95 @@ class RecentlyViewedProductAdmin(admin.ModelAdmin):
             edit_url
         )
     action_buttons.short_description = 'Actions'
-    
-    
-@admin.register(FrequentlyBoughtTogether)
-class FrequentlyBoughtTogetherAdmin(admin.ModelAdmin):
+
+
+class ProductComboItemInline(admin.TabularInline):
+    """Inline admin for ProductComboItem"""
+    model = ProductComboItem
+    extra = 1
+    autocomplete_fields = ['product']
+    fields = ['product', 'quantity', 'action_buttons']
+    readonly_fields = ['action_buttons']
+
+    def action_buttons(self, obj):
+        if obj.pk:
+            edit_url = reverse('admin:product_productcomboitem_change', args=[obj.id])
+            return format_html(
+                '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+                'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+                edit_url
+            )
+        return '-'
+    action_buttons.short_description = 'Actions'
+
+
+@admin.register(ProductCombo)
+class ProductComboAdmin(admin.ModelAdmin):
     list_display = (
+        'name',
         'main_product',
-        'related_product',
-        'display_order',
-        'discount_percentage',
+        'combo_selling_price',
+        'combo_regular_price',
         'is_active',
-        'total_price_display'
+        'is_featured',
+        'item_count',
+        'action_buttons',
     )
-    list_filter = ('is_active',)
-    search_fields = (
-        'main_product__name',
-        'related_product__name',
+    list_filter = ('is_active', 'is_featured', 'created_at', 'main_product')
+    search_fields = ('name', 'slug', 'description', 'main_product__name')
+    prepopulated_fields = {'slug': ('name',)}
+    list_editable = ('is_active', 'is_featured')
+    autocomplete_fields = ['main_product']
+    inlines = [ProductComboItemInline]
+    
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('name', 'main_product', 'slug', 'description')
+        }),
+        ('Pricing', {
+            'fields': ('combo_regular_price', 'combo_selling_price')
+        }),
+        ('Status', {
+            'fields': ('is_active', 'is_featured')
+        }),
     )
-    ordering = ('display_order',)
-    
-    # Make total_price read-only in admin
-    readonly_fields = ('total_price_display',)
-    
-    def total_price_display(self, obj):
-        return obj.total_price
-    total_price_display.short_description = "Total Price"
-    
-    # Optional: Disable adding duplicates of main+related product combination
-    def has_add_permission(self, request):
-        return True  # You can return False if you want to completely disable add
-    
-    def has_change_permission(self, request, obj=None):
-        return True  # Keep True to allow editing
+
+    def item_count(self, obj):
+        count = obj.items.count()
+        return format_html(
+            '<span style="background-color:#007BFF; color:white; padding:3px 8px; border-radius:3px; font-weight:bold;">{}</span>',
+            count
+        )
+    item_count.short_description = 'Items'
+
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:product_productcombo_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'
+
+
+@admin.register(ProductComboItem)
+class ProductComboItemAdmin(admin.ModelAdmin):
+    list_display = (
+        'combo',
+        'product',
+        'quantity',
+        'action_buttons',
+    )
+    list_filter = ('combo',)
+    search_fields = ('combo__name', 'product__name')
+    autocomplete_fields = ['combo', 'product']
+    list_editable = ('quantity',)
+
+    def action_buttons(self, obj):
+        edit_url = reverse('admin:product_productcomboitem_change', args=[obj.id])
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
+            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            edit_url
+        )
+    action_buttons.short_description = 'Actions'

@@ -14,8 +14,10 @@ from .models import (
     ProductVariant,
     VariantAttribute,
     VariantAttributeValue,
-    Deal, 
-    RecentlyViewedProduct
+    Deal,
+    RecentlyViewedProduct,
+    ProductCombo,
+    ProductComboItem
 )
 from reviews.models import ProductReview
 from .serializers import (
@@ -30,6 +32,9 @@ from .serializers import (
     DealDetailSerializer,
     DealCreateUpdateSerializer,
     RecentlyViewedProductSerializer,
+    ProductComboListSerializer,
+    ProductComboDetailSerializer,
+    ProductComboCreateUpdateSerializer,
 )
 from .utils import add_recently_viewed
 from rest_framework.permissions import (
@@ -593,13 +598,13 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class DealViewSet(viewsets.ModelViewSet):
-    """ViewSet for deals"""
+    """ViewSet for deals - simplified version"""
 
-    queryset = Deal.objects.select_related("product", "variant").prefetch_related(
-        "product__brand", "product__category", "product__images", "variant__images"
+    queryset = Deal.objects.select_related("product").prefetch_related(
+        "product__brand", "product__category", "product__images"
     )
     permission_classes = [IsAuthenticatedOrReadOnly]
-    lookup_field = "slug"
+    lookup_field = "id"
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -607,14 +612,9 @@ class DealViewSet(viewsets.ModelViewSet):
     ]
     filterset_class = DealFilter
     search_fields = ["title", "product__name", "product__brand__name"]
-    ordering_fields = [
-        "created_at",
-        "start_date",
-        "end_date",
-        "discount_percentage",
-        "display_order",
-    ]
+    ordering_fields = ["created_at", "start_at", "end_at", "discount_percent", "display_order"]
     ordering = ["-is_featured", "display_order", "-created_at"]
+    pagination_class = ProductPagination
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
@@ -629,59 +629,15 @@ class DealViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated()]
         return [AllowAny()]
 
-    def retrieve(self, request, *args, **kwargs):
-        """Track view when deal is retrieved"""
-        instance = self.get_object()
-
-        # Track view
-        self._track_view(request, instance)
-
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
-
-    def _track_view(self, request, deal):
-        """Track deal view"""
-        DealView.objects.create(
-            deal=deal,
-            ip_address=self._get_client_ip(request),
-            user_agent=request.META.get("HTTP_USER_AGENT", ""),
-            session_key=request.session.session_key or "",
-            user=request.user if request.user.is_authenticated else None,
-            referrer=request.META.get("HTTP_REFERER", ""),
-            device_type=self._get_device_type(request),
-        )
-        deal.increment_view()
-
-    def _get_client_ip(self, request):
-        """Get client IP address"""
-        x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(",")[0]
-        else:
-            ip = request.META.get("REMOTE_ADDR")
-        return ip
-
-    def _get_device_type(self, request):
-        """Determine device type from user agent"""
-        user_agent = request.META.get("HTTP_USER_AGENT", "").lower()
-        if "mobile" in user_agent or "android" in user_agent:
-            return "mobile"
-        elif "tablet" in user_agent or "ipad" in user_agent:
-            return "tablet"
-        return "desktop"
-
     @action(detail=False, methods=["get"])
     def featured(self, request):
-        """Get featured deals"""
-        deals = (
-            self.get_queryset()
-            .filter(
-                is_featured=True,
-                is_active=True,
-                start_date__lte=timezone.now(),
-                end_date__gte=timezone.now(),
-            )
-            .exclude(sold_quantity__gte=F("total_quantity"))
+        """Get featured deals that are currently active"""
+        now = timezone.now()
+        deals = self.get_queryset().filter(
+            is_featured=True,
+            is_active=True,
+            start_at__lte=now,
+            end_at__gte=now,
         )
 
         page = self.paginate_queryset(deals)
@@ -694,15 +650,12 @@ class DealViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def live(self, request):
-        """Get all live deals"""
-        deals = (
-            self.get_queryset()
-            .filter(
-                is_active=True,
-                start_date__lte=timezone.now(),
-                end_date__gte=timezone.now(),
-            )
-            .exclude(sold_quantity__gte=F("total_quantity"))
+        """Get all live (currently active) deals"""
+        now = timezone.now()
+        deals = self.get_queryset().filter(
+            is_active=True,
+            start_at__lte=now,
+            end_at__gte=now,
         )
 
         page = self.paginate_queryset(deals)
@@ -716,11 +669,11 @@ class DealViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def upcoming(self, request):
         """Get upcoming deals"""
-        deals = (
-            self.get_queryset()
-            .filter(is_active=True, start_date__gt=timezone.now())
-            .order_by("start_date")
-        )
+        now = timezone.now()
+        deals = self.get_queryset().filter(
+            is_active=True,
+            start_at__gt=now
+        ).order_by("start_at")
 
         page = self.paginate_queryset(deals)
         if page is not None:
@@ -733,18 +686,14 @@ class DealViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def deal_of_the_day(self, request):
         """Get current deal of the day"""
-        deal = (
-            self.get_queryset()
-            .filter(
-                deal_type="deal_of_day",
-                is_active=True,
-                is_featured=True,
-                start_date__lte=timezone.now(),
-                end_date__gte=timezone.now(),
-            )
-            .exclude(sold_quantity__gte=F("total_quantity"))
-            .first()
-        )
+        now = timezone.now()
+        deal = self.get_queryset().filter(
+            deal_type="daily",
+            is_active=True,
+            is_featured=True,
+            start_at__lte=now,
+            end_at__gte=now,
+        ).first()
 
         if not deal:
             return Response(
@@ -758,15 +707,12 @@ class DealViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def flash_sales(self, request):
         """Get active flash sales"""
-        deals = (
-            self.get_queryset()
-            .filter(
-                deal_type="flash_sale",
-                is_active=True,
-                start_date__lte=timezone.now(),
-                end_date__gte=timezone.now(),
-            )
-            .exclude(sold_quantity__gte=F("total_quantity"))
+        now = timezone.now()
+        deals = self.get_queryset().filter(
+            deal_type="flash",
+            is_active=True,
+            start_at__lte=now,
+            end_at__gte=now,
         )
 
         page = self.paginate_queryset(deals)
@@ -776,168 +722,6 @@ class DealViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(deals, many=True)
         return Response(serializer.data)
-
-    @action(detail=True, methods=["post"])
-    def track_click(self, request, slug=None):
-        """Track deal click"""
-        deal = self.get_object()
-        click_type = request.data.get("click_type", "view_detail")
-
-        DealClick.objects.create(
-            deal=deal,
-            ip_address=self._get_client_ip(request),
-            session_key=request.session.session_key or "",
-            user=request.user if request.user.is_authenticated else None,
-            click_type=click_type,
-        )
-        deal.increment_click()
-
-        return Response({"status": "click tracked"}, status=status.HTTP_200_OK)
-
-    @action(detail=True, methods=["post"], permission_classes=[IsAuthenticated])
-    def purchase(self, request, slug=None):
-        """Record a purchase (increment sold quantity)"""
-        deal = self.get_object()
-        quantity = request.data.get("quantity", 1)
-
-        # Validate quantity
-        if quantity < 1:
-            return Response(
-                {"error": "Quantity must be at least 1"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if quantity > deal.max_quantity_per_order:
-            return Response(
-                {"error": f"Maximum {deal.max_quantity_per_order} items per order"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check if deal is live
-        if not deal.is_live:
-            return Response(
-                {"error": "Deal is not currently active"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Check if quantity available
-        if deal.remaining_quantity < quantity:
-            return Response(
-                {"error": f"Only {deal.remaining_quantity} items remaining"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        # Increment sold quantity
-        success = deal.increment_sold(quantity)
-
-        if success:
-            return Response(
-                {
-                    "status": "success",
-                    "quantity": quantity,
-                    "remaining": deal.remaining_quantity,
-                },
-                status=status.HTTP_200_OK,
-            )
-        else:
-            return Response(
-                {"error": "Failed to process purchase"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-    @action(detail=False, methods=["get"])
-    def stats(self, request):
-        """Get deal statistics"""
-        now = timezone.now()
-
-        total_deals = self.get_queryset().count()
-        active_deals = self.get_queryset().filter(is_active=True).count()
-        live_deals = (
-            self.get_queryset()
-            .filter(is_active=True, start_date__lte=now, end_date__gte=now)
-            .exclude(sold_quantity__gte=F("total_quantity"))
-            .count()
-        )
-
-        upcoming_deals = (
-            self.get_queryset().filter(is_active=True, start_date__gt=now).count()
-        )
-
-        expired_deals = self.get_queryset().filter(end_date__lt=now).count()
-
-        # Revenue calculation
-        revenue_data = self.get_queryset().aggregate(
-            total_revenue=Sum(
-                F("sold_quantity") * F("discounted_price"), output_field=DecimalField()
-            ),
-            total_views=Sum("view_count"),
-            total_clicks=Sum("click_count"),
-            total_sold=Sum("sold_quantity"),
-        )
-
-        # Conversion rate
-        if revenue_data["total_clicks"] and revenue_data["total_clicks"] > 0:
-            avg_conversion = (
-                revenue_data["total_sold"] / revenue_data["total_clicks"]
-            ) * 100
-        else:
-            avg_conversion = 0
-
-        stats = {
-            "total_deals": total_deals,
-            "active_deals": active_deals,
-            "live_deals": live_deals,
-            "upcoming_deals": upcoming_deals,
-            "expired_deals": expired_deals,
-            "total_revenue": revenue_data["total_revenue"] or 0,
-            "total_views": revenue_data["total_views"] or 0,
-            "total_clicks": revenue_data["total_clicks"] or 0,
-            "total_sold": revenue_data["total_sold"] or 0,
-            "average_conversion_rate": round(avg_conversion, 2),
-        }
-
-        serializer = DealStatsSerializer(stats)
-        return Response(serializer.data)
-
-    @action(detail=True, methods=["get"])
-    def analytics(self, request, slug=None):
-        """Get detailed analytics for a specific deal"""
-        deal = self.get_object()
-
-        # Views over time
-        views_by_day = (
-            deal.view_logs.extra(select={"day": "DATE(viewed_at)"})
-            .values("day")
-            .annotate(count=Count("id"))
-            .order_by("day")
-        )
-
-        # Clicks over time
-        clicks_by_day = (
-            deal.click_logs.extra(select={"day": "DATE(clicked_at)"})
-            .values("day")
-            .annotate(count=Count("id"))
-            .order_by("day")
-        )
-
-        # Device breakdown
-        device_breakdown = deal.view_logs.values("device_type").annotate(
-            count=Count("id")
-        )
-
-        analytics = {
-            "deal": DealDetailSerializer(deal, context={"request": request}).data,
-            "views_by_day": list(views_by_day),
-            "clicks_by_day": list(clicks_by_day),
-            "device_breakdown": list(device_breakdown),
-            "total_views": deal.view_count,
-            "total_clicks": deal.click_count,
-            "total_sold": deal.sold_quantity,
-            "conversion_rate": deal.get_conversion_rate(),
-            "revenue": float(deal.sold_quantity * deal.discounted_price),
-        }
-
-        return Response(analytics)
 
 from django.contrib.auth import get_user_model
 
@@ -949,14 +733,14 @@ class RecentlyViewedProductViewSet(viewsets.ReadOnlyModelViewSet):
     API endpoint for recently viewed products
     """
     serializer_class = RecentlyViewedProductSerializer
-    # permission_classes = [IsAuthenticated]  # only logged-in users
+    permission_classes = [IsAuthenticated]  # only logged-in users
     pagination_class = None  # optional, remove pagination
 
     def get_queryset(self):
         # try:
         #     user = self.request.user
         # except: 
-        user = User.objects.all()[0]
+        user = self.request.user
 
 
         # get limit from query params, default = 10
@@ -994,3 +778,67 @@ def get_categories_by_brand(request):
 
     categories = Category.objects.filter(brands__id=brand_id, is_active=True).values('id', 'name')
     return Response(list(categories))
+
+
+# ===== PRODUCT COMBO VIEWSET =====
+
+class ProductComboViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for product combos/bundles
+    """
+    queryset = (
+        ProductCombo.objects
+        .filter(is_active=True)
+        .select_related('main_product')
+        .prefetch_related('items__product__images', 'items__product__variants')
+    )
+    lookup_field = 'slug'
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['main_product']
+    search_fields = ['name', 'description', 'slug', 'main_product__name']
+    ordering_fields = ['created_at', 'combo_selling_price']
+    ordering = ['-is_featured', '-created_at']
+    pagination_class = ProductPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return ProductComboCreateUpdateSerializer
+        elif self.action == 'retrieve':
+            return ProductComboDetailSerializer
+        return ProductComboListSerializer
+
+    def get_permissions(self):
+        """Admin only for create, update, delete"""
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated()]
+        return [AllowAny()]
+
+    @action(detail=False, methods=['get'])
+    def featured(self, request):
+        """Get featured product combos"""
+        combos = self.get_queryset().filter(is_featured=True)
+
+        page = self.paginate_queryset(combos)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(combos, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['get'])
+    def items(self, request, slug=None):
+        """Get items in a specific combo"""
+        combo = self.get_object()
+        items = combo.items.all().select_related('product').prefetch_related('product__images')
+
+        page = self.paginate_queryset(items)
+        if page is not None:
+            from .serializers import ProductComboItemSerializer
+            serializer = ProductComboItemSerializer(page, many=True, context={'request': request})
+            return self.get_paginated_response(serializer.data)
+
+        from .serializers import ProductComboItemSerializer
+        serializer = ProductComboItemSerializer(items, many=True, context={'request': request})
+        return Response(serializer.data)

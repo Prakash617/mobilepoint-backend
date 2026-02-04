@@ -20,37 +20,109 @@ class OrderUserSerializer(serializers.ModelSerializer):
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    """Serializer for displaying order items with product/variant details"""
+    """Serializer for displaying order items with product/variant/combo details"""
+    deal_title = serializers.CharField(source='deal.title', read_only=True, allow_null=True)
+    deal_type = serializers.CharField(source='deal.deal_type', read_only=True, allow_null=True)
+    combo_name = serializers.CharField(source='combo.name', read_only=True, allow_null=True)
+    combo_items = serializers.SerializerMethodField()
+    
     class Meta:
         model = OrderItem
         fields = [
             'id', 'product', 'product_variant', 'product_name', 'variant_name', 
-            'quantity', 'price', 'subtotal', 'created_at'
+            'quantity', 'original_price', 'price', 'discount_percent', 
+            'deal', 'deal_title', 'deal_type',
+            'combo', 'combo_name', 'combo_parent', 'combo_items', 'is_combo_parent',
+            'subtotal', 'created_at'
         ]
         
-        read_only_fields = ['subtotal', 'product_name', 'variant_name', 'created_at']
+        read_only_fields = ['subtotal', 'product_name', 'variant_name', 'created_at', 'original_price', 'discount_percent']
+    
+    def get_combo_items(self, obj):
+        """Get child items if this is a combo parent"""
+        if obj.is_combo_parent:
+            child_items = obj.combo_items.all()
+            return OrderItemSerializer(child_items, many=True, context=self.context).data
+        return None
 
 
 class OrderItemCreateSerializer(serializers.ModelSerializer):
-    """Serializer for creating order items. Supports both products and variants."""
+    """Serializer for creating order items. Supports both products and variants with optional deals and combos."""
+    
     class Meta:
         model = OrderItem
-        fields = ['product', 'product_variant', 'quantity']
+        fields = ['product', 'product_variant', 'deal', 'combo', 'quantity']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set combo queryset to only active combos
+        from product.models import ProductCombo
+        self.fields['combo'].queryset = ProductCombo.objects.filter(is_active=True)
     
     def validate(self, data):
-        """Validate that either product or product_variant is provided, not both"""
+        """Validate that either product/variant OR combo is provided, and validate deal/combo constraints"""
         product = data.get('product')
         product_variant = data.get('product_variant')
+        deal = data.get('deal')
+        combo = data.get('combo')
         
-        if not product and not product_variant:
-            raise serializers.ValidationError(
-                "Either 'product' or 'product_variant' must be provided."
-            )
-        
-        if product and product_variant:
-            raise serializers.ValidationError(
-                "Provide either 'product' or 'product_variant', not both."
-            )
+        # Check for combo vs product/variant
+        if combo:
+            if product or product_variant:
+                raise serializers.ValidationError(
+                    "When ordering a combo, do not provide 'product' or 'product_variant'."
+                )
+            if deal:
+                raise serializers.ValidationError(
+                    "Combos cannot be combined with deals."
+                )
+            
+            # Validate combo is active
+            if not combo.is_active:
+                raise serializers.ValidationError({
+                    'combo': 'Selected combo is not active.'
+                })
+        else:
+            # Regular product/variant order
+            if not product and not product_variant:
+                raise serializers.ValidationError(
+                    "Either 'product', 'product_variant', or 'combo' must be provided."
+                )
+            
+            if product and product_variant:
+                raise serializers.ValidationError(
+                    "Provide either 'product' or 'product_variant', not both."
+                )
+            
+            # Validate deal if provided
+            if deal:
+                from django.utils import timezone
+                now = timezone.now()
+                
+                # Check if deal is active
+                if not deal.is_active:
+                    raise serializers.ValidationError({
+                        'deal': 'Selected deal is not active.'
+                    })
+                
+                # Check if deal is in valid time window
+                if not (deal.start_at <= now <= deal.end_at):
+                    raise serializers.ValidationError({
+                        'deal': 'Selected deal is not currently available.'
+                    })
+                
+                # Check if deal product matches
+                if deal.product != product and (not product_variant or deal.product != product_variant.product):
+                    raise serializers.ValidationError({
+                        'deal': 'Selected deal does not apply to this product.'
+                    })
+                
+                # Check inventory
+                quantity = data.get('quantity', 1)
+                if deal.remaining_quantity < quantity:
+                    raise serializers.ValidationError({
+                        'deal': f'Insufficient deal inventory. Only {deal.remaining_quantity} items remaining.'
+                    })
         
         return data
 
@@ -69,11 +141,12 @@ class OrderListSerializer(serializers.ModelSerializer):
     """Serializer for listing orders with summary information"""
     user = OrderUserSerializer(read_only=True)
     items_count = serializers.IntegerField(source='items.count', read_only=True)
+    payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
     
     class Meta:
         model = Order
         fields = [
-            'id', 'order_number', 'user', 'status', 'payment_status',
+            'id', 'order_number', 'user', 'status', 'payment_status', 'payment_method', 'payment_method_display',
             'total', 'items_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['order_number', 'created_at', 'updated_at']
@@ -84,11 +157,13 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     user = OrderUserSerializer(read_only=True)
     items = OrderItemSerializer(many=True, read_only=True)
     status_history = OrderStatusHistorySerializer(many=True, read_only=True)
+    payment_method_display = serializers.CharField(source='get_payment_method_display', read_only=True)
     
     class Meta:
         model = Order
         fields = [
-            'id', 'order_number', 'user', 'status', 'payment_status',
+            'id', 'order_number', 'user', 'status', 'payment_status', 'payment_method', 'payment_method_display', 
+            'payment_transaction_id',
             'subtotal', 'tax', 'shipping_cost', 'discount', 'total',
             'shipping_name', 'shipping_email', 'shipping_phone',
             'shipping_address', 'shipping_city', 'shipping_state',
@@ -106,26 +181,78 @@ class OrderCreateSerializer(serializers.ModelSerializer):
     """
     Serializer for creating new orders.
     
-    This serializer handles the creation of orders with items.
+    This serializer handles the creation of orders with items including:
+    - Regular products with optional deals
+    - Product variants with optional deals
+    - Product combos (bundles)
+    - Multiple payment methods (COD, Khalti, eSewa, Bank Transfer)
+    
     It automatically:
     - Calculates subtotal from items
-    - Applies 10% tax
+    - Applies deal discounts when specified
+    - Applies combo discounts
+    - Calculates 10% tax
     - Adds flat $10 shipping cost
     - Creates initial order status history
     - Associates order with authenticated user
     
-    Request Example:
+    Request Examples:
+    
+    1. Regular product order with COD:
     {
         "items": [
             {
                 "product": 1,
                 "quantity": 2
-            },
+            }
+        ],
+        "payment_method": "cod",
+        "shipping_name": "John Doe",
+        ...
+    }
+    
+    2. Order with deal and Khalti payment:
+    {
+        "items": [
             {
-                "product_variant": 5,
+                "product": 1,
+                "deal": 5,
+                "quantity": 2
+            }
+        ],
+        "payment_method": "khalti",
+        "payment_transaction_id": "KH123456789",
+        "shipping_name": "John Doe",
+        ...
+    }
+    
+    3. Order with combo and eSewa payment:
+    {
+        "items": [
+            {
+                "combo": 3,
                 "quantity": 1
             }
         ],
+        "shipping_name": "John Doe",
+        ...
+    }
+    
+    4. Mixed order (deal + combo):
+    {
+        "items": [
+            {
+                "product": 1,
+                "deal": 5,
+                "quantity": 1
+            },
+            {
+                "combo": 3,
+                "quantity": 1
+            }
+        ],
+        "payment_method": "esewa",
+        "payment_transaction_id": "ES987654321",
         "shipping_name": "John Doe",
         "shipping_email": "john@example.com",
         "shipping_phone": "+1234567890",
@@ -142,22 +269,49 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         "billing_country": "USA",
         "notes": "Please deliver after 5pm"
     }
+    
+    Payment Methods:
+    - cod: Cash on Delivery (default)
+    - khalti: Khalti Payment Gateway
+    - esewa: eSewa Payment Gateway
+    - bank_transfer: Bank Transfer
     """
     items = OrderItemCreateSerializer(many=True, write_only=True)
     
     class Meta:
         model = Order
         fields = [
-            'items', 'shipping_name', 'shipping_email', 'shipping_phone',
+            'items', 'payment_method', 'payment_transaction_id',
+            'shipping_name', 'shipping_email', 'shipping_phone',
             'shipping_address', 'shipping_city', 'shipping_state',
             'shipping_zip', 'shipping_country',
             'billing_name', 'billing_address', 'billing_city',
             'billing_state', 'billing_zip', 'billing_country', 'notes'
         ]
     
+    def validate_payment_method(self, value):
+        """Validate payment method"""
+        valid_methods = ['cod', 'khalti', 'esewa', 'bank_transfer']
+        if value not in valid_methods:
+            raise serializers.ValidationError(f"Invalid payment method. Choose from: {', '.join(valid_methods)}")
+        return value
+    
+    def validate(self, data):
+        """Additional validation for payment methods"""
+        payment_method = data.get('payment_method', 'cod')
+        payment_transaction_id = data.get('payment_transaction_id')
+        
+        # For online payment methods, transaction ID might be required
+        if payment_method in ['khalti', 'esewa'] and not payment_transaction_id:
+            # Transaction ID can be added later after payment confirmation
+            pass
+        
+        return data
+    
     def create(self, validated_data):
         from decimal import Decimal
         from django.db import transaction
+        from orders.services import OrderService, ComboService
         
         items_data = validated_data.pop('items')
         user = validated_data.get('user')
@@ -165,32 +319,57 @@ class OrderCreateSerializer(serializers.ModelSerializer):
         with transaction.atomic():
             # Calculate totals
             subtotal = Decimal('0.00')
-            order_items = []
+            total_discount = Decimal('0.00')
+            order_items_to_create = []
             
             for item_data in items_data:
-                product = item_data.get('product')
-                variant = item_data.get('product_variant')
-                quantity = item_data['quantity']
+                combo = item_data.get('combo')
                 
-                # Determine price based on product or variant
-                if variant:
-                    price = variant.price
-                    product_obj = variant.product
+                if combo:
+                    # Handle combo item
+                    quantity = item_data['quantity']
+                    combo_pricing = ComboService.get_combo_discount(combo)
+                    
+                    item_subtotal = combo_pricing['selling_price'] * quantity
+                    item_discount = combo_pricing['discount_amount'] * quantity
+                    
+                    subtotal += item_subtotal
+                    total_discount += item_discount
+                    
+                    order_items_to_create.append({
+                        'type': 'combo',
+                        'combo': combo,
+                        'quantity': quantity,
+                        'pricing': combo_pricing
+                    })
                 else:
-                    price = product.base_price
-                    product_obj = product
-                
-                item_subtotal = price * quantity
-                subtotal += item_subtotal
-                
-                order_items.append({
-                    'product': product,
-                    'variant': variant,
-                    'product_obj': product_obj,
-                    'quantity': quantity,
-                    'price': price,
-                    'subtotal': item_subtotal
-                })
+                    # Handle regular product/variant with optional deal
+                    product = item_data.get('product')
+                    variant = item_data.get('product_variant')
+                    deal = item_data.get('deal')
+                    quantity = item_data['quantity']
+                    
+                    # Calculate pricing with deal if provided
+                    pricing = OrderService.calculate_item_price(
+                        product=product or (variant.product if variant else None),
+                        product_variant=variant,
+                        deal=deal
+                    )
+                    
+                    item_subtotal = pricing['final_price'] * quantity
+                    item_discount = (pricing['original_price'] - pricing['final_price']) * quantity
+                    
+                    subtotal += item_subtotal
+                    total_discount += item_discount
+                    
+                    order_items_to_create.append({
+                        'type': 'regular',
+                        'product': product,
+                        'variant': variant,
+                        'deal': deal,
+                        'quantity': quantity,
+                        'pricing': pricing
+                    })
             
             # Calculate tax and total
             tax = subtotal * Decimal('0.10')  # 10% tax
@@ -202,26 +381,49 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 subtotal=subtotal,
                 tax=tax,
                 shipping_cost=shipping_cost,
+                discount=total_discount,
                 total=total,
                 **validated_data
             )
             
             # Create order items
-            for item in order_items:
-                order_item_kwargs = {
-                    'order': order,
-                    'product_name': item['product_obj'].name,
-                    'quantity': item['quantity'],
-                    'price': item['price']
-                }
-                
-                if item['variant']:
-                    order_item_kwargs['product_variant'] = item['variant']
-                    order_item_kwargs['variant_name'] = item['variant'].__str__()  # Use variant's __str__ method
+            for item_info in order_items_to_create:
+                if item_info['type'] == 'combo':
+                    # Create combo items (parent + children)
+                    ComboService.create_combo_order_items(
+                        order=order,
+                        combo=item_info['combo'],
+                        quantity=item_info['quantity']
+                    )
                 else:
-                    order_item_kwargs['product'] = item['product']
-                
-                OrderItem.objects.create(**order_item_kwargs)
+                    # Create regular order item
+                    product = item_info['product']
+                    variant = item_info['variant']
+                    deal = item_info.get('deal')
+                    pricing = item_info['pricing']
+                    quantity = item_info['quantity']
+                    
+                    product_obj = variant.product if variant else product
+                    
+                    order_item_kwargs = {
+                        'order': order,
+                        'product_name': product_obj.name,
+                        'quantity': quantity,
+                        'original_price': pricing['original_price'],
+                        'price': pricing['final_price'],
+                        'discount_percent': pricing['discount_percent']
+                    }
+                    
+                    if variant:
+                        order_item_kwargs['product_variant'] = variant
+                        order_item_kwargs['variant_name'] = str(variant)
+                    else:
+                        order_item_kwargs['product'] = product
+                    
+                    if deal:
+                        order_item_kwargs['deal'] = deal
+                    
+                    OrderItem.objects.create(**order_item_kwargs)
             
             # Create initial status history
             OrderStatusHistory.objects.create(

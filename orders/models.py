@@ -23,10 +23,21 @@ class Order(models.Model):
         ('refunded', 'Refunded'),
     ]
 
+    PAYMENT_METHOD_CHOICES = [
+        ('cod', 'Cash on Delivery'),
+        ('khalti', 'Khalti'),
+        ('esewa', 'eSewa'),
+        ('bank_transfer', 'Bank Transfer'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     order_number = models.CharField(max_length=100, unique=True, editable=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
+    
+    # Payment gateway reference (for khalti, esewa transactions)
+    payment_transaction_id = models.CharField(max_length=200, blank=True, null=True, help_text="Transaction ID from payment gateway")
 
     # Pricing
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
@@ -79,19 +90,44 @@ class Order(models.Model):
             import uuid
             self.order_number = f"ORD-{uuid.uuid4().hex[:12].upper()}"
         super().save(*args, **kwargs)
+    
+    def finalize(self):
+        """Finalize order - increment deal sold quantities"""
+        from product.models import Deal
+        from django.utils import timezone
+        
+        for item in self.items.all():
+            if item.deal:
+                # Increment the deal's sold quantity
+                item.deal.increment_sold(item.quantity)
+                
+                # Increment deal purchase count (now in Deal model directly)
+                item.deal.increment_purchases(item.quantity)
 
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey('product.Product', on_delete=models.PROTECT, null=True, blank=True)
     product_variant = models.ForeignKey('product.ProductVariant', on_delete=models.PROTECT, null=True, blank=True)
-
+    
+    # Track if a deal was applied to this order item
+    deal = models.ForeignKey('product.Deal', on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')
+    
+    # Track if this order item is part of a combo
+    combo = models.ForeignKey('product.ProductCombo', on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')
+    combo_parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='combo_items')
+    
     product_name = models.CharField(max_length=200)
     variant_name = models.CharField(max_length=200, blank=True, null=True)
 
     quantity = models.PositiveIntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    original_price = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)], help_text="Price before discount")
+    discount_percent = models.PositiveIntegerField(default=0, help_text="Discount percentage applied from deal")
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    
+    # Track if this is the main combo item or a child item
+    is_combo_parent = models.BooleanField(default=False, help_text="True if this is the combo bundle itself")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

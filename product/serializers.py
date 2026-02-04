@@ -3,7 +3,9 @@ from django.utils import timezone
 from .models import (
     Category, Brand, Product, VariantAttribute, VariantAttributeValue,
     ProductVariant,
-    ProductImage, Deal,RecentlyViewedProduct
+    ProductImage, Deal, RecentlyViewedProduct,
+    ProductCombo,
+    ProductComboItem
 )
 
 
@@ -242,6 +244,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     free_shipping = serializers.SerializerMethodField()
     free_gift = serializers.SerializerMethodField()
     promotions = serializers.SerializerMethodField()  # <-- This is a method field
+    deals = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -249,7 +252,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug','short_description', 'description', 'category', 'brand',
             'base_price', 'specifications', 'meta_title', 'meta_description',
             'is_active', 'is_featured', 'images', 'variants', 
-            'available_attributes', 'created_at', 'updated_at','free_shipping', 'free_gift','promotions'
+            'available_attributes', 'created_at', 'updated_at','free_shipping', 'free_gift','promotions',
+            'deals'
         ]
     
     def get_available_attributes(self, obj):
@@ -304,6 +308,16 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             start_date__lte=now,
             end_date__gte=now
         ).exists()
+    
+    def get_deals(self, obj):
+        """Get active deals for this product"""
+        now = timezone.now()
+        deals = obj.deals.filter(
+            is_active=True,
+            start_at__lte=now,
+            end_at__gte=now
+        )
+        return DealListSerializer(deals, many=True, context=self.context).data
         
     def _get_promotion_info(self, obj, promotion_type):
         from django.utils.timezone import now
@@ -344,151 +358,42 @@ class DealListSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
     product_slug = serializers.CharField(source='product.slug', read_only=True)
     brand_name = serializers.CharField(source='product.brand.name', read_only=True)
-    variant_info = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
-    all_images = serializers.SerializerMethodField()
-    time_remaining = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-    specification = serializers.SerializerMethodField()
-    time_remaining_hms = serializers.ReadOnlyField()  # no source needed
-
-    
+    remaining_quantity = serializers.IntegerField(read_only=True)
+    progress_percentage = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Deal
         fields = [
-            'id', 'slug', 'title', 'deal_type', 'product_name', 
-            'product_slug', 'brand_name', 'variant_info','specification',
-            'original_price', 'discounted_price', 'discount_percentage',
-            'remaining_quantity', 'progress_percentage', 'total_quantity',
-            'free_shipping','free_gift', 'shipping_message', 'badge_text', 'badge_color',
-            'primary_image','all_images', 'time_remaining', 'status',
-            'is_featured', 'start_date', 'end_date','time_remaining_hms'
+            'id', 'title', 'deal_type', 'product_name', 'product_slug',
+            'brand_name', 'discount_percent', 'start_at', 'end_at',
+            'is_active', 'is_featured', 'display_order', 'primary_image',
+            'total_quantity', 'sold_quantity', 'remaining_quantity', 'progress_percentage'
         ]
     
-    def get_variant_info(self, obj):
-        if obj.variant:
-            attributes = obj.variant.variant_attributes.all()
-            return {
-                'attributes': [
-                    {
-                        'name': attr.attribute.name,
-                        'value': attr.value
-                    }
-                    for attr in attributes
-                ]
-            }
-        return None
-    
-    
-    def get_specification(self, obj):
-        return obj.product.specifications
-    
     def get_primary_image(self, obj):
-        # Get variant image if specific variant, otherwise product image
-        if obj.variant:
-            image = obj.variant.images.filter(is_primary=True).first()
-        else:
-            image = obj.product.images.filter(is_primary=True).first()
+        image = obj.product.images.filter(is_primary=True).first()
         
         if image:
             return ProductImageSerializer(image, context=self.context).data
         return None
-    
-    def get_all_images(self, obj):
-        """
-        Returns all images for the product or variant,
-        placing the primary image first.
-        """
-        # Select the source: variant images if variant exists, else product images
-        images_qs = obj.variant.images.all() if obj.variant else obj.product.images.all()
-
-        # Order images: primary first
-        images = sorted(
-            images_qs,
-            key=lambda x: not x.is_primary  # primary=True comes first
-        )
-
-        # Serialize all images
-        return ProductImageSerializer(images, many=True, context=self.context).data
-    
-    def get_time_remaining(self, obj):
-        return obj.time_remaining()
-    
-    def get_status(self, obj):
-        if obj.is_sold_out:
-            return 'sold_out'
-        elif obj.is_expired:
-            return 'expired'
-        elif obj.is_upcoming:
-            return 'upcoming'
-        elif obj.is_live:
-            return 'live'
-        return 'inactive'
 
 
 class DealDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for single deal"""
     product = ProductDetailSerializer(read_only=True)
-    variant = ProductVariantDetailSerializer(read_only=True)
-    time_remaining = serializers.SerializerMethodField()
-    time_until_start = serializers.SerializerMethodField()
-    status = serializers.SerializerMethodField()
-    all_images = serializers.SerializerMethodField()
-    conversion_rate = serializers.SerializerMethodField()
-    available_variants = serializers.SerializerMethodField()
+    remaining_quantity = serializers.IntegerField(read_only=True)
+    progress_percentage = serializers.IntegerField(read_only=True)
     
     class Meta:
         model = Deal
         fields = [
-            'id', 'slug', 'title', 'deal_type', 'description',
-            'terms_and_conditions', 'product', 'variant',
-            'original_price', 'discounted_price', 'discount_percentage',
-            'start_date', 'end_date', 'total_quantity', 'sold_quantity',
-            'remaining_quantity', 'progress_percentage', 'max_quantity_per_order',
-            'free_shipping', 'shipping_message', 'badge_text', 'badge_color',
-            'highlight_features', 'display_order', 'is_active', 'is_featured',
-            'view_count', 'click_count', 'time_remaining', 'time_until_start',
-            'status', 'is_sold_out', 'is_live', 'is_expired', 'is_upcoming',
-            'all_images', 'conversion_rate', 'available_variants',
+            'id', 'title', 'deal_type', 'product',
+            'discount_percent', 'start_at', 'end_at', 'is_active',
+            'is_featured', 'display_order', 'views', 'purchases', 'free_shipping', 'free_gift_text',
+            'total_quantity', 'sold_quantity', 'remaining_quantity', 'progress_percentage',
             'created_at', 'updated_at'
         ]
-    
-    def get_time_remaining(self, obj):
-        return obj.time_remaining()
-    
-    def get_time_until_start(self, obj):
-        return obj.time_until_start()
-    
-    def get_status(self, obj):
-        if obj.is_sold_out:
-            return 'sold_out'
-        elif obj.is_expired:
-            return 'expired'
-        elif obj.is_upcoming:
-            return 'upcoming'
-        elif obj.is_live:
-            return 'live'
-        return 'inactive'
-    
-    def get_all_images(self, obj):
-        # Get all images for the deal (variant or product images)
-        if obj.variant:
-            images = obj.variant.images.all()
-            if not images.exists():
-                images = obj.product.images.all()
-        else:
-            images = obj.product.images.all()
-        
-        return ProductImageSerializer(images, many=True, context=self.context).data
-    
-    def get_conversion_rate(self, obj):
-        return obj.get_conversion_rate()
-    
-    def get_available_variants(self, obj):
-        """Get all variants this deal applies to"""
-        variants = obj.get_applicable_variants()
-        return ProductVariantListSerializer(variants, many=True).data
 
 
 class DealCreateUpdateSerializer(serializers.ModelSerializer):
@@ -497,36 +402,29 @@ class DealCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Deal
         fields = [
-            'product', 'variant', 'title', 'deal_type', 'slug',
-            'original_price', 'discounted_price', 'start_date', 'end_date',
-            'total_quantity', 'max_quantity_per_order', 'free_shipping',
-            'shipping_message', 'badge_text', 'badge_color',
-            'highlight_features', 'description', 'terms_and_conditions',
-            'display_order', 'is_active', 'is_featured'
+            'product', 'title', 'deal_type',
+            'discount_percent', 'total_quantity', 'sold_quantity',
+            'start_at', 'end_at',
+            'is_active', 'is_featured', 'display_order'
         ]
     
     def validate(self, data):
-        # Validate dates
-        if data.get('start_date') and data.get('end_date'):
-            if data['start_date'] >= data['end_date']:
+        if data.get('start_at') and data.get('end_at'):
+            if data['start_at'] >= data['end_at']:
                 raise serializers.ValidationError({
-                    'end_date': 'End date must be after start date.'
+                    'end_at': 'End time must be after start time.'
                 })
         
-        # Validate prices
-        if data.get('original_price') and data.get('discounted_price'):
-            if data['discounted_price'] >= data['original_price']:
+        if data.get('discount_percent'):
+            if not (1 <= data['discount_percent'] <= 90):
                 raise serializers.ValidationError({
-                    'discounted_price': 'Discounted price must be less than original price.'
+                    'discount_percent': 'Discount must be between 1 and 90 percent.'
                 })
         
-        # Validate quantity
-        variant = data.get('variant')
-        total_quantity = data.get('total_quantity')
-        if variant and total_quantity:
-            if total_quantity > variant.stock_quantity:
+        if data.get('sold_quantity') and data.get('total_quantity'):
+            if data['sold_quantity'] > data['total_quantity']:
                 raise serializers.ValidationError({
-                    'total_quantity': f'Cannot exceed variant stock quantity ({variant.stock_quantity}).'
+                    'sold_quantity': 'Sold quantity cannot exceed total quantity.'
                 })
         
         return data
@@ -538,3 +436,79 @@ class RecentlyViewedProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecentlyViewedProduct
         fields = ['id', 'product', 'viewed_at']
+
+
+# ===== PRODUCT COMBO SERIALIZERS =====
+
+class ProductComboItemSerializer(serializers.ModelSerializer):
+    product = ProductListSerializer(read_only=True)
+    product_id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = ProductComboItem
+        fields = ['id', 'product', 'product_id', 'quantity']
+
+
+class ProductComboListSerializer(serializers.ModelSerializer):
+    main_product = ProductListSerializer(read_only=True)
+    item_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = ProductCombo
+        fields = [
+            'id', 'name', 'slug', 'main_product', 'combo_regular_price', 'combo_selling_price',
+            'is_active', 'is_featured', 'item_count'
+        ]
+    
+    def get_item_count(self, obj):
+        return obj.items.count()
+
+
+class ProductComboDetailSerializer(serializers.ModelSerializer):
+    main_product = ProductListSerializer(read_only=True)
+    items = ProductComboItemSerializer(many=True, read_only=True)
+    
+    class Meta:
+        model = ProductCombo
+        fields = [
+            'id', 'name', 'slug', 'main_product', 'description', 'combo_regular_price',
+            'combo_selling_price', 'is_active', 'is_featured', 'items',
+            'created_at', 'updated_at'
+        ]
+
+
+class ProductComboCreateUpdateSerializer(serializers.ModelSerializer):
+    items = ProductComboItemSerializer(many=True, write_only=True, required=False)
+    main_product_id = serializers.IntegerField(write_only=True)
+    
+    class Meta:
+        model = ProductCombo
+        fields = [
+            'name', 'main_product_id', 'slug', 'description', 'combo_regular_price',
+            'combo_selling_price', 'is_active', 'is_featured', 'items'
+        ]
+    
+    def create(self, validated_data):
+        items_data = validated_data.pop('items', [])
+        combo = ProductCombo.objects.create(**validated_data)
+        
+        for item_data in items_data:
+            ProductComboItem.objects.create(combo=combo, **item_data)
+        
+        return combo
+    
+    def update(self, instance, validated_data):
+        items_data = validated_data.pop('items', None)
+        
+        # Update combo fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+        
+        # Update items if provided
+        if items_data is not None:
+            instance.items.all().delete()
+            for item_data in items_data:
+                ProductComboItem.objects.create(combo=instance, **item_data)
+        
+        return instance

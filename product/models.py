@@ -392,331 +392,143 @@ class ProductPromotion(models.Model):
         now = timezone.now()
         return self.is_active and self.start_date <= now <= self.end_date
     
-class FrequentlyBoughtTogether(models.Model):
-    """Products frequently bought together"""
-    main_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='bought_together_main')
-    related_product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='bought_together_related')
-    display_order = models.PositiveIntegerField(default=0)
-    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=0)
+
+class ProductCombo(models.Model):
+    """Product combo/bundle"""
+    
+    name = models.CharField(max_length=300)
+    main_product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name="combos",
+    )
+    slug = models.SlugField(max_length=300, unique=True)
+    description = HTMLField(blank=True, null=True)
+    combo_regular_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    combo_selling_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     is_active = models.BooleanField(default=True)
+    is_featured = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = "Frequently Bought Together"
-        verbose_name_plural = "Frequently Bought Together"
-        unique_together = ['main_product', 'related_product']
-        ordering = ['display_order']
+        verbose_name = "Product Combo"
+        verbose_name_plural = "Product Combos"
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.main_product.name} + {self.related_product.name}"
+        return self.name
     
-    @property
-    def total_price(self):
-        """Calculate total price with discount"""
-        pass
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
-    
-# class ProductComparison(models.Model):
-#     """Products added for comparison"""
-#     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='comparisons')
-#     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-#     added_at = models.DateTimeField(auto_now_add=True)
 
-#     class Meta:
-#         verbose_name = "Product Comparison"
-#         verbose_name_plural = "Product Comparisons"
-#         unique_together = ['user', 'product']
-#         ordering = ['added_at']
+class ProductComboItem(models.Model):
+    """Items in a product combo"""
+    combo = models.ForeignKey(
+        ProductCombo,
+        on_delete=models.CASCADE,
+        related_name="items"
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE
+    )
+    quantity = models.PositiveIntegerField(default=1)
 
-#     def __str__(self):
-#         return f"{self.user.username} - {self.product.name}"
-    
+    class Meta:
+        unique_together = ["combo", "product"]
+
+    def __str__(self):
+        return f"{self.combo.name} → {self.product.name}"
 
 
 class Deal(models.Model):
-    """
-    Deal/Promotion Model - can be linked to entire product or specific variants
-    Supports Deal of the Day, Flash Sales, etc.
-    """
+    """Deal model combining Deal, DealStat, and DealExtra functionality"""
     DEAL_TYPE_CHOICES = [
-        ('deal_of_day', 'Deal of the Day'),
-        ('flash_sale', 'Flash Sale'),
-        ('clearance', 'Clearance'),
-        ('seasonal', 'Seasonal Sale'),
-        ('bundle', 'Bundle Deal'),
-        ('limited_time', 'Limited Time Offer'),
+        ("flash", "Flash Sale"),
+        ("daily", "Deal of the Day"),
+        ("seasonal", "Seasonal Sale"),
+        # ("clearance", "Clearance"),
     ]
 
-    # Product relationship
+    # ========== Core Deal Fields ==========
     product = models.ForeignKey(
-        Product, 
-        on_delete=models.CASCADE, 
-        related_name='deals'
-    )
-    
-    # Optional: specific variant (if deal is for specific variant only)
-    # If null, deal applies to all variants
-    variant = models.ForeignKey(
-        ProductVariant,
+        Product,
         on_delete=models.CASCADE,
-        related_name='deals',
-        null=True,
-        blank=True,
-        help_text="Leave blank if deal applies to all variants"
+        related_name="deals"
     )
-    
-    # Deal information
-    title = models.CharField(max_length=255)
-    deal_type = models.CharField(max_length=50, choices=DEAL_TYPE_CHOICES)
-    slug = models.SlugField(max_length=300, unique=True)
-    
-    # Pricing
-    original_price = models.DecimalField(max_digits=10, decimal_places=2)
-    discounted_price = models.DecimalField(max_digits=10, decimal_places=2)
-    discount_percentage = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        editable=False
+
+    title = models.CharField(max_length=200)
+    deal_type = models.CharField(max_length=20, choices=DEAL_TYPE_CHOICES)
+
+    discount_percent = models.PositiveIntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(90)],
+        help_text="Percentage discount"
     )
-    
-    # Deal duration
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    
-    # Inventory allocation for the deal
-    total_quantity = models.PositiveIntegerField(
-        validators=[MinValueValidator(1)],
-        help_text="Total units allocated for this deal"
-    )
-    sold_quantity = models.PositiveIntegerField(
-        default=0,
-        validators=[MinValueValidator(0)]
-    )
-    max_quantity_per_order = models.PositiveIntegerField(
-        default=5,
-        help_text="Maximum quantity per order"
-    )
-    
-    # Shipping
-    free_shipping = models.BooleanField(default=False)
-    shipping_message = models.CharField(max_length=100, blank=True)
-    
-    # fire gift
-    free_gift = models.BooleanField(default=False)
-    gift_message = models.CharField(max_length=100, blank=True)
-    
-    # Display settings
-    badge_text = models.CharField(max_length=50, blank=True)  # e.g., "HOT DEAL", "80% OFF"
-    badge_color = models.CharField(max_length=7, default='#FF0000')  # Hex color
-    
-    # Highlighted features to display (JSON array)
-    highlight_features = models.JSONField(
-        default=list, 
-        blank=True,
-        help_text="Featured specs to display. E.g., [{'label': 'Display', 'value': '6.67 inches'}]"
-    )
-    
-    # Deal description/terms
-    description = models.TextField(blank=True)
-    terms_and_conditions = models.TextField(blank=True)
-    
-    # Priority and visibility
-    display_order = models.IntegerField(default=0)  # For sorting deals
+
+    total_quantity = models.PositiveIntegerField(default=0, help_text="Total quantity available for this deal")
+    sold_quantity = models.PositiveIntegerField(default=0, help_text="Quantity sold so far")
+
+    start_at = models.DateTimeField()
+    end_at = models.DateTimeField()
+
     is_active = models.BooleanField(default=True)
-    is_featured = models.BooleanField(default=False)  # Show on homepage
-    
-    # Analytics
-    view_count = models.PositiveIntegerField(default=0, editable=False)
-    click_count = models.PositiveIntegerField(default=0, editable=False)
-    
+    is_featured = models.BooleanField(default=False)
+
+    display_order = models.PositiveIntegerField(default=0)
+
+    # ========== DealStat Fields (Statistics) ==========
+    views = models.PositiveIntegerField(default=0, help_text="Number of views for this deal")
+    purchases = models.PositiveIntegerField(default=0, help_text="Number of purchases made")
+
+    # ========== DealExtra Fields (Additional Options) ==========
+    free_shipping = models.BooleanField(default=False, help_text="Free shipping for this deal")
+    free_gift_text = models.CharField(max_length=100, blank=True, help_text="Free gift description")
+
+    # ========== Timestamps ==========
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Deal"
-        verbose_name_plural = "Deal"
-        db_table = 'deals'
+        verbose_name_plural = "Deals"
         ordering = ['-is_featured', 'display_order', '-created_at']
-        indexes = [
-            models.Index(fields=['deal_type', 'is_active']),
-            models.Index(fields=['start_date', 'end_date']),
-            models.Index(fields=['is_featured', 'is_active']),
-            models.Index(fields=['product', 'variant']),
-            models.Index(fields=['slug']),
-        ]
-
-    def save(self, *args, **kwargs):
-        # Auto-calculate discount percentage
-        if self.original_price and self.discounted_price:
-            discount = ((self.original_price - self.discounted_price) / self.original_price) * 100
-            self.discount_percentage = round(discount)
-        
-        # Auto-populate prices from variant if not set
-        if self.variant and not self.original_price:
-            self.original_price = self.variant.price
-        if self.variant and not self.discounted_price:
-            self.discounted_price = self.variant.price * 0.8  # Default 20% discount
-            
-        super().save(*args, **kwargs)
 
     def __str__(self):
-        variant_info = f" - {self.variant}" if self.variant else ""
-        return f"{self.get_deal_type_display()}: {self.product.name}{variant_info}"
-
-    # Quantity properties
+        return f"{self.title} - {self.product.name}"
+    
     @property
     def remaining_quantity(self):
-        """Calculate remaining quantity"""
+        """Get remaining quantity available for purchase"""
         return max(0, self.total_quantity - self.sold_quantity)
     
     @property
-    def time_remaining_hms(self):
-        """Return time remaining as H:M:S"""
-        now = timezone.now()
-        if self.end_date <= now:
-            return "00:00:00"  # expired
-        
-        diff = self.end_date - now
-        total_seconds = int(diff.total_seconds())
-        
-        hours = total_seconds // 3600
-        minutes = (total_seconds % 3600) // 60
-        seconds = total_seconds % 60
-        
-        return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
-
-    @property
     def progress_percentage(self):
-        """Calculate sold progress as percentage"""
+        """Get progress percentage of items sold"""
         if self.total_quantity == 0:
             return 0
-        return round((self.sold_quantity / self.total_quantity) * 100, 2)
-
-    @property
-    def is_sold_out(self):
-        """Check if deal is sold out"""
-        return self.sold_quantity >= self.total_quantity
-
-    # Time properties
-    @property
-    def is_expired(self):
-        """Check if deal has expired"""
-        return timezone.now() > self.end_date
-
-    @property
-    def is_upcoming(self):
-        """Check if deal hasn't started yet"""
-        return timezone.now() < self.start_date
-
-    @property
-    def is_live(self):
-        """Check if deal is currently active and available"""
-        now = timezone.now()
-        return (
-            self.start_date <= now <= self.end_date 
-            and self.is_active 
-            and not self.is_sold_out
-        )
-
-    def time_remaining(self):
-        """Get time remaining until deal expires"""
-        if self.is_expired:
-            return {'expired': True, 'days': 0, 'hours': 0, 'minutes': 0, 'seconds': 0}
-        
-        now = timezone.now()
-        diff = self.end_date - now
-        
-        hours = diff.seconds // 3600
-        minutes = (diff.seconds % 3600) // 60
-        seconds = diff.seconds % 60
-        
-        return {
-            'expired': False,
-            'days': diff.days,
-            'hours': hours,
-            'minutes': minutes,
-            'seconds': seconds
-        }
-
-    def time_until_start(self):
-        """Get time until deal starts (for upcoming deals)"""
-        if not self.is_upcoming:
-            return None
-        
-        now = timezone.now()
-        diff = self.start_date - now
-        
-        hours = diff.seconds // 3600
-        minutes = (diff.seconds % 3600) // 60
-        
-        return {
-            'days': diff.days,
-            'hours': hours,
-            'minutes': minutes
-        }
-
-    # Action methods
+        return int((self.sold_quantity / self.total_quantity) * 100)
+    
     def increment_sold(self, quantity=1):
-        """
-        Increment sold quantity and update variant stock
-        Returns True if successful, False if quantity not available
-        """
-        if self.sold_quantity + quantity > self.total_quantity:
-            return False
-        
-        # Update deal sold quantity
-        self.sold_quantity += quantity
-        self.save(update_fields=['sold_quantity', 'updated_at'])
-        
-        # Update variant stock if specific variant
-        if self.variant and self.variant.stock_quantity >= quantity:
-            self.variant.stock_quantity -= quantity
-            self.variant.sold_quantity += quantity
-            self.variant.save(update_fields=['stock_quantity', 'updated_at'])
-        
-        return True
-
-    def increment_view(self):
+        """Increment sold quantity"""
+        if self.sold_quantity + quantity <= self.total_quantity:
+            self.sold_quantity += quantity
+            self.save(update_fields=['sold_quantity'])
+            return True
+        return False
+    
+    def increment_views(self):
         """Increment view count"""
-        self.view_count += 1
-        self.save(update_fields=['view_count'])
-
-    def increment_click(self):
-        """Increment click count"""
-        self.click_count += 1
-        self.save(update_fields=['click_count'])
-
-    # Helper methods
-    def get_display_specs(self):
-        """Get highlighted specifications for display"""
-        if self.highlight_features:
-            return self.highlight_features
-        
-        # Default specs from product
-        specs = []
-        product_specs = self.product.specifications
-        
-        # Common specs to highlight
-        priority_keys = ['display', 'processor', 'ram', 'storage', 'camera', 'battery']
-        
-        for key in priority_keys:
-            if key in product_specs:
-                specs.append({
-                    'label': key.title(),
-                    'value': product_specs[key]
-                })
-        
-        return specs
-
-    def get_applicable_variants(self):
-        """Get all variants this deal applies to"""
-        if self.variant:
-            return [self.variant]
-        return self.product.variants.filter(is_active=True)
-
-    def get_conversion_rate(self):
-        """Calculate conversion rate (clicks to sales)"""
-        if self.click_count == 0:
-            return 0
-        return round((self.sold_quantity / self.click_count) * 100, 2)
+        self.views += 1
+        self.save(update_fields=['views'])
+    
+    def increment_purchases(self, quantity=1):
+        """Increment purchase count"""
+        self.purchases += quantity
+        self.save(update_fields=['purchases'])
     
     
 class RecentlyViewedProduct(models.Model):

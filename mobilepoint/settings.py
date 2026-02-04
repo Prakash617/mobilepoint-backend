@@ -152,7 +152,8 @@ WSGI_APPLICATION = "mobilepoint.wsgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
-DB_ENGINE = os.environ.get('DB_ENGINE', default='django.db.backends.sqlite3')
+# DB_ENGINE = os.environ.get('DB_ENGINE', default='django.db.backends.sqlite3')
+DB_ENGINE = os.environ.get('DB_ENGINE')
 
 if DB_ENGINE == 'django.db.backends.postgresql':
     DATABASES = {
@@ -173,6 +174,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    
 
 
 # Password validation

@@ -375,11 +375,11 @@ DASHUB_SETTINGS = {
     # Hidden models
     # --------------------------------------------------
     "hide_models": [
-        # "auth",
+        "auth",
         "auth.group",
-        # "accounts",
-        # "accounts.user",
-        # "accounts.usergroup",
+        "accounts",
+        "accounts.user",
+        "accounts.usergroup",
 
         "product",
         "product.category",
@@ -393,7 +393,8 @@ DASHUB_SETTINGS = {
         "product.productimage",
         "product.productpromotion",
         "product.deal",
-        "product.frequentlyboughttogether",
+        "product.productcombo",
+        "product.productcomboitem",
 
         "orders",
         "orders.order",
@@ -403,6 +404,8 @@ DASHUB_SETTINGS = {
         "wishlist",
         "wishlist.wishlist",
         "wishlist.wishlistitem",
+        
+        "reviews.productreview",
 
         "website",
         "website.carousel",
@@ -412,6 +415,9 @@ DASHUB_SETTINGS = {
         "website.newslettersubscriber",
         "website.contactmessage",
         "website.sitesettings",
+        
+        'menu.page',
+        'menu.menu',
     ],
 
     # --------------------------------------------------
@@ -471,6 +477,7 @@ DASHUB_SETTINGS = {
         "product.productvariantattributevalue": "hgi hgi-stroke hgi-link-02",
         "product.productpromotion": "hgi hgi-stroke hgi-gift",
         "product.deal": "hgi hgi-stroke hgi-flash",
+        "product.productcombo":"hgi hgi-stroke hgi-store-management-01",
 
         "orders.order": "hgi hgi-stroke hgi-invoice-01",
         "orders.orderitem": "hgi hgi-stroke hgi-list-view",
@@ -497,6 +504,17 @@ DASHUB_SETTINGS = {
     # Sidebar (explicit URLs)
     # --------------------------------------------------
     "custom_links": {
+        "accounts" : [
+            {
+                "name": "Users",
+                "icon": "hgi hgi-stroke hgi-user",
+                "url": "/admin/accounts/user/",
+                "submenu": [
+                    {"model": "accounts.user", "order": 1},
+                    {"model": "auth.group", "order": 2},
+                ],
+            }
+        ],
         "product": [
             {
                 "name": "Catalog",
@@ -526,8 +544,9 @@ DASHUB_SETTINGS = {
                 "submenu": [
                     {"model": "product.productpromotion", "order": 1},
                     {"model": "product.deal", "order": 2},
-                    {"model": "product.frequentlyboughttogether", "order": 3},
+                    {"model": "product.productcombo", "order": 3},
                     # {"model": "product.frequentlyboughttogether", "order": 3},
+                    # "product.productcombo":"hgi hgi-stroke hgi-store-management-01",
                 ],
             },
         ],
@@ -539,7 +558,9 @@ DASHUB_SETTINGS = {
                 "submenu": [
                 
                     {"model": "orders.order", "order": 1},
-                    {"model": "orders.orderitem", "order": 2},
+                    {"model": "reviews.productreview", "order": 1},
+                    
+                    # {"model": "orders.orderitem", "order": 2},
                     
                 ],
             },
@@ -557,6 +578,8 @@ DASHUB_SETTINGS = {
                     # {"model": "website.carouselslide", "order": 2},
                     {"model": "website.advertisement", "order": 3},
                     {"model": "website.curateditem", "order": 4},
+                    {"model": "menu.menu", "order": 5}, 
+                    
                 ],
             },
             {

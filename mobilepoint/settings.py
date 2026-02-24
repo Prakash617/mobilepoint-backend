@@ -99,19 +99,23 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
 
+# CORS Settings - Allow all origins
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 # CORS Settings (adjust for production)
 # Get the string and split it into a list
-CORS_ALLOWED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+# CORS_ALLOWED_ORIGINS = [
+#     origin.strip()
+#     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+#     if origin.strip()
+# ]
 
-CSRF_TRUSTED_ORIGINS = [
-    origin.strip()
-    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-]
+# CSRF_TRUSTED_ORIGINS = [
+#     origin.strip()
+#     for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+#     if origin.strip()
+# ]
 
 
 
@@ -513,6 +517,7 @@ DASHUB_SETTINGS = {
                     {"model": "accounts.user", "order": 1},
                     {"model": "auth.group", "order": 2},
                 ],
+                "permissions": ["accounts.view_user", "accounts.view_group"],
             }
         ],
         "product": [
@@ -523,7 +528,9 @@ DASHUB_SETTINGS = {
                 "submenu": [
                     {"model": "product.category", "order": 1},
                     {"model": "product.brand", "order": 2},
-                    {"model": "product.product", "order": 3},
+                    {"model": "product.product", "order": 3,
+                    "permissions": ["view_product","add_product","change_product","delete_product"],
+                    },
                 ],
             },
             {
@@ -567,6 +574,19 @@ DASHUB_SETTINGS = {
         
         
         ],
+        # "customsidebar": [
+        #     {
+        #         "name": "customsidebarmenu",
+        #         "icon": "hgi hgi-stroke hgi-carousel-horizontal",
+        #         "url": "/admin/website/content/",
+        #         "submenu": [
+        #             {"model": "website.carousel", "order": 1},
+        #             {"name": "Custom page", "url": "admin/custompage/", "icon": "fa-solid fa-folder", "order": 1},
+                    
+                    
+        #         ],
+        #     },
+        # ],
 
         "website": [
             {

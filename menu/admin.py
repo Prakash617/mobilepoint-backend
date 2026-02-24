@@ -37,6 +37,11 @@ class MenuAdmin(admin.ModelAdmin):
             edit_url
         )
     action_buttons.short_description = 'Actions'
+    
+    def has_module_permission(self, request):
+        if request.user.is_superuser:
+            return True
+        return request.user.has_module_perms(self.opts.app_label)
 
 admin.site.register(Menu, MenuAdmin)
 

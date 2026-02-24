@@ -192,3 +192,7 @@ def calculate_percentage_change(current, previous):
         return round(float(change), 1)
     except:
         return 0
+    
+    
+def custompage(request):
+    return render(request, 'admin/custompage.html')

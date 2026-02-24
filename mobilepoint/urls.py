@@ -27,20 +27,25 @@ from django.conf.urls.static import static
 
 from rest_framework.routers import DefaultRouter
 from product.api_views import ProductViewSet
-from .admin_views import filehub_embed, analytic_dashboard
+from .admin_views import filehub_embed, analytic_dashboard, custompage
+from .admin_site import secure_admin_site
 from drf_spectacular.views import (
     SpectacularAPIView,
     SpectacularSwaggerView,
     SpectacularRedocView,
 )
 router = DefaultRouter()
+# Copy all existing registered models
+secure_admin_site._registry = admin.site._registry
 
 urlpatterns = [
     path('admin/', include('filehub.urls')),
+    path('admin/custompage/', custompage, name='custom_page'),
     path("filemanager/", filehub_embed, name="admin_filehub"),
     path('auth/', include('accounts.api_urls')),
     path("analytic_dashboard/", analytic_dashboard, name="analytic_dashboard"),
-    path('admin/', admin.site.urls),
+    # path('admin/', admin.site.urls),
+    path("admin/", secure_admin_site.urls),
     path('product/', include('product.api_urls')),
     # Direct route for frontend-friendly related products URL
     path('products/<slug:slug>/related/', ProductViewSet.as_view({'get': 'related'}), name='product-related'),

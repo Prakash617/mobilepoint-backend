@@ -5,7 +5,7 @@ from mobilepoint.urls import router
 from .api_views import (
     CategoryViewSet, BrandViewSet, ProductViewSet, ProductVariantViewSet,
     DealViewSet, RecentlyViewedProductViewSet,
-    ProductComboViewSet
+    ProductComboViewSet, PromotionViewSet
 )
 from .views import get_categories_by_brand
 
@@ -17,6 +17,7 @@ router.register(r'variants', ProductVariantViewSet, basename='variant')
 router.register(r'deals', DealViewSet, basename='deal')
 router.register(r'recently-viewed', RecentlyViewedProductViewSet, basename='recently-viewed')
 router.register(r'combos', ProductComboViewSet, basename='combo')
+router.register(r'promotions', PromotionViewSet, basename='promotion')
 
 
 app_name = 'product'

@@ -101,9 +101,33 @@ class ContactMessageSerializer(serializers.ModelSerializer):
 
 
 class SiteSettingsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for SiteSettings model.
+    
+    Fields:
+        - site_name: Store name
+        - logo: Store logo image
+        - shipping_cost: Default shipping cost (decimal)
+        - tax: Default tax percentage/amount (decimal)
+        - email, phone, address: Contact information
+        - social media URLs: Facebook, Twitter, Instagram, LinkedIn, YouTube
+        - maintenance_mode: Enable/disable maintenance mode
+        - meta_*: SEO metadata
+    """
+    
     class Meta:
         model = SiteSettings
-        fields = '__all__'
+        fields = [
+            'id', 'site_name', 'site_tagline', 'site_description',
+            'logo', 'favicon',
+            'shipping_cost', 'tax',
+            'email', 'phone', 'address',
+            'facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url', 'youtube_url',
+            'maintenance_mode', 'allow_guest_checkout',
+            'meta_title', 'meta_description', 'meta_keywords',
+            'updated_at'
+        ]
+        read_only_fields = ['updated_at']
         
 class CuratedItemSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()

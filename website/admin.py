@@ -133,37 +133,84 @@ class AdvertisementAdmin(admin.ModelAdmin):
 #     search_fields = ['question', 'answer']
 
 
+from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+from .models import NewsletterSubscriber
+
+
 @admin.register(NewsletterSubscriber)
 class NewsletterSubscriberAdmin(admin.ModelAdmin):
-    list_display = ['email', 'name', 'is_active', 'subscribed_at', 'action_buttons']
-    list_filter = ['is_active', 'subscribed_at']
-    search_fields = ['email', 'name']
-    
+    list_display = (
+        'email',
+        'name',
+        'is_active',
+        'subscribed_at',
+        'action_buttons',
+    )
+
+    list_filter = ('is_active', 'subscribed_at')
+    search_fields = ('email', 'name')
+    readonly_fields = ('unsubscribed_at', 'subscribed_at')
+    ordering = ('-subscribed_at',)
+
+    @admin.display(description="Actions")
     def action_buttons(self, obj):
-        edit_url = reverse('admin:website_newslettersubscriber_change', args=[obj.id])
-        return format_html(
-            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
-            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
-            edit_url
+        url = reverse(
+            'admin:website_newslettersubscriber_change',
+            args=[obj.pk]
         )
-    action_buttons.short_description = 'Actions'
+        return format_html(
+            '<a href="{}" style="padding:4px 10px; background:#28A745; '
+            'color:white; border-radius:5px; text-decoration:none;">Edit</a>',
+            url
+        )
+
+
+from django.contrib import admin
+from django.urls import reverse
+from django.utils.html import format_html
+from .models import ContactMessage
 
 
 @admin.register(ContactMessage)
 class ContactMessageAdmin(admin.ModelAdmin):
-    list_display = ['name', 'email', 'subject', 'is_read', 'replied', 'created_at', 'action_buttons']
-    list_filter = ['is_read', 'replied', 'created_at']
-    search_fields = ['name', 'email', 'subject', 'message']
-    readonly_fields = ['created_at']
-    
+    list_display = (
+        'name',
+        'email',
+        'subject',
+        'is_read',
+        'replied',
+        'created_at',
+        'action_buttons',
+    )
+
+    list_filter = ('is_read', 'replied', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
+    readonly_fields = ('created_at', 'replied_at')
+    list_per_page = 20
+    ordering = ('-created_at',)
+
+    @admin.display(description="Actions")
     def action_buttons(self, obj):
-        edit_url = reverse('admin:website_contactmessage_change', args=[obj.id])
+        edit_url = reverse(
+            'admin:website_contactmessage_change',
+            args=[obj.pk]
+        )
         return format_html(
-            '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
-            'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
+            '<a href="{}" style="padding:4px 10px; background-color:#28A745; '
+            'color:white; border-radius:5px; text-decoration:none; '
+            'font-weight:bold;">Reply</a>',
             edit_url
         )
-    action_buttons.short_description = 'Actions'
+
+    # 🔥 Auto mark as read when opened in admin
+    def get_object(self, request, object_id, from_field=None):
+        obj = super().get_object(request, object_id, from_field)
+        if obj and not obj.is_read:
+            obj.is_read = True
+            obj.save(update_fields=['is_read'])
+        return obj
 
 
 @admin.register(SiteSettings)
@@ -177,6 +224,10 @@ class SiteSettingsAdmin(admin.ModelAdmin):
         }),
         ('Social Media', {
             'fields': ('facebook_url', 'twitter_url', 'instagram_url', 'linkedin_url', 'youtube_url')
+        }),
+        ('Shipping & Tax Configuration', {
+            'fields': ('shipping_cost', 'tax'),
+            'description': 'Configure default shipping cost and tax percentage for orders'
         }),
         ('Settings', {
             'fields': ('maintenance_mode', 'allow_guest_checkout',

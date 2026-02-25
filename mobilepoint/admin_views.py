@@ -65,7 +65,7 @@ def analytic_dashboard(request):
     out_of_stock_count = ProductVariant.objects.filter(is_active=True, stock_quantity=0).count()
     
     # Order Status Distribution
-    order_statuses = Order.objects.filter(created_at__gte=start_date).values('status').annotate(
+    order_statuses = Order.objects.filter(created_at__gte=start_date).values('order_status').annotate(
         count=Count('id')
     ).order_by('-count')
     

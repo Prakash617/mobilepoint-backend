@@ -186,14 +186,26 @@ class ContactMessage(models.Model):
 
     def __str__(self):
         return f"{self.name} - {self.subject}"
+    
+    def save(self, *args, **kwargs):
+        # If reply message exists and not already marked as replied
+        if self.reply_message and not self.replied:
+            self.replied = True
+            self.replied_at = timezone.now()
+
+        super().save(*args, **kwargs)
 
 
 class SiteSettings(models.Model):
+    
     site_name = models.CharField(max_length=200, default='My Store')
     site_tagline = models.CharField(max_length=300, blank=True, null=True)
     site_description = models.TextField(blank=True, null=True)
     logo = models.ImageField(upload_to='site/', blank=True, null=True)
     favicon = models.ImageField(upload_to='site/', blank=True, null=True)
+    
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax = models.DecimalField(max_digits=5, decimal_places=2, default=0.00, help_text='Tax percentage (e.g., 10 for 10%)')
 
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)

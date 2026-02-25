@@ -1,4 +1,16 @@
-{% load dashub %}
-{% get_side_menu as menu_list %}
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}{% endblock %}
 
+{% comment %} {% block content %} {% endcomment %}
+<div class="page-header">
+    <div class="page-block">
+        <div class="row">
+            <div class="col-md-12">
+            </div>
+        </div>
+    </div>
+
+
+{% block content %}
 <h1> hello dear friend </h1>
+{% endblock %}

@@ -282,16 +282,50 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
 
 
 class SiteSettingsViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for site settings.
+    
+    Includes:
+    - Store information (name, logo, contact details)
+    - Shipping cost configuration
+    - Tax settings
+    - Social media links
+    - SEO metadata
+    
+    Note: Only one SiteSettings instance exists (id=1).
+    Use list() to get current settings or update() to modify.
+    """
     queryset = SiteSettings.objects.all()
     serializer_class = SiteSettingsSerializer
     
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
+        if self.action in ['list', 'retrieve', 'current']:
             return [AllowAny()]
         return [IsAdminUser()]
     
     def list(self, request, *args, **kwargs):
         """Get site settings (always returns single instance)"""
+        settings, created = SiteSettings.objects.get_or_create(id=1)
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='current', url_name='current-settings')
+    def current(self, request):
+        """
+        Get current site settings.
+        
+        Returns shipping_cost, tax, and other configuration.
+        Available to all users (unauthenticated access allowed).
+        
+        Example:
+            GET /api/site-settings/current/
+        """
+        settings, created = SiteSettings.objects.get_or_create(id=1)
+        serializer = self.get_serializer(settings)
+        return Response(serializer.data)
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Get site settings by ID"""
         settings, created = SiteSettings.objects.get_or_create(id=1)
         serializer = self.get_serializer(settings)
         return Response(serializer.data)

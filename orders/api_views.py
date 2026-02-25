@@ -34,7 +34,7 @@ from .serializers import (
         description='Get a list of orders. Staff can see all orders, users see only their own.',
         parameters=[
             OpenApiParameter(
-                name='status',
+                name='order_status',
                 description='Filter by order status',
                 required=False,
                 type=OpenApiTypes.STR,
@@ -55,7 +55,7 @@ from .serializers import (
             ),
             OpenApiParameter(
                 name='ordering',
-                description='Order by created_at, total, or status (prefix with - for descending)',
+                description='Order by created_at, total, or order_status (prefix with - for descending)',
                 required=False,
                 type=OpenApiTypes.STR
             ),
@@ -107,9 +107,9 @@ class OrderViewSet(viewsets.ModelViewSet):
     """
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['status', 'payment_status', 'created_at']
+    filterset_fields = ['order_status', 'payment_status', 'created_at']
     search_fields = ['order_number', 'shipping_email', 'shipping_name']
-    ordering_fields = ['created_at', 'total', 'status']
+    ordering_fields = ['created_at', 'total', 'order_status']
     ordering = ['-created_at']
     
     def get_queryset(self):
@@ -136,7 +136,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             OpenApiExample(
                 'Update to shipped',
                 value={
-                    'status': 'shipped',
+                    'order_status': 'shipped',
                     'notes': 'Package has been dispatched'
                 }
             )
@@ -150,12 +150,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         Request body:
         {
-            "status": "confirmed|processing|shipped|delivered|cancelled|refunded",
+            "order_status": "confirmed|processing|shipped|delivered|cancelled|refunded",
             "notes": "Optional notes about the status change"
         }
         """
         order = self.get_object()
-        new_status = request.data.get('status')
+        new_status = request.data.get('order_status')
         notes = request.data.get('notes', '')
         
         if new_status not in dict(Order.STATUS_CHOICES):
@@ -164,7 +164,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        order.status = new_status
+        order.order_status = new_status
         order.save()
         
         OrderStatusHistory.objects.create(

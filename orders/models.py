@@ -32,9 +32,10 @@ class Order(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders')
     order_number = models.CharField(max_length=100, unique=True, editable=False)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    order_status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='pending')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHOD_CHOICES, default='cod')
+    
     
     # Payment gateway reference (for khalti, esewa transactions)
     payment_transaction_id = models.CharField(max_length=200, blank=True, null=True, help_text="Transaction ID from payment gateway")
@@ -112,6 +113,11 @@ class OrderItem(models.Model):
     
     # Track if a deal was applied to this order item
     deal = models.ForeignKey('product.Deal', on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')
+    
+    # Track promotions (free shipping, free gift) applied to this product on the order
+    promotions = models.ManyToManyField('product.Promotion', blank=True, related_name='order_items', help_text='Promotions applied to this order item')
+    
+    free_gift_detail = models.CharField(max_length=300, blank=True, null=True, help_text='Details of free gift if promotion applied')
     
     # Track if this order item is part of a combo
     combo = models.ForeignKey('product.ProductCombo', on_delete=models.SET_NULL, null=True, blank=True, related_name='order_items')

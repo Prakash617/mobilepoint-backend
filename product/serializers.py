@@ -5,7 +5,7 @@ from .models import (
     ProductVariant,
     ProductImage, Deal, RecentlyViewedProduct,
     ProductCombo,
-    ProductComboItem
+    ProductComboItem, Promotion
 )
 
 
@@ -512,3 +512,139 @@ class ProductComboCreateUpdateSerializer(serializers.ModelSerializer):
                 ProductComboItem.objects.create(combo=instance, **item_data)
         
         return instance
+
+
+class PromotionListSerializer(serializers.ModelSerializer):
+    """
+    Simplified promotion serializer for list views.
+    
+    Returns essential promotion information with calculated fields:
+    - product_count: Number of products in the promotion
+    - is_currently_active: Boolean indicating if promotion is active now
+    - remaining_days: Days remaining until promotion ends
+    """
+    product_count = serializers.SerializerMethodField()
+    is_currently_active = serializers.SerializerMethodField()
+    remaining_days = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'promotion_type', 'title', 'description',
+            'start_date', 'end_date', 'is_active', 'is_currently_active',
+            'product_count', 'remaining_days', 'created_at'
+        ]
+    
+    def get_product_count(self, obj):
+        """Get count of products in this promotion"""
+        return obj.products.count()
+    
+    def get_is_currently_active(self, obj):
+        """Check if promotion is currently active"""
+        return obj.is_currently_active
+    
+    def get_remaining_days(self, obj):
+        """Get remaining days for the promotion"""
+        from django.utils import timezone
+        now = timezone.now()
+        if obj.end_date > now:
+            delta = obj.end_date - now
+            return delta.days
+        return 0
+
+
+class PromotionDetailSerializer(serializers.ModelSerializer):
+    """
+    Detailed promotion serializer with full product list.
+    
+    Includes:
+    - All promotion fields
+    - Complete list of associated products with details
+    - Calculated fields (active status, product count, remaining days)
+    
+    For creating/updating promotions, use product_ids field to specify
+    which products should be associated with this promotion.
+    """
+    products = ProductListSerializer(many=True, read_only=True)
+    product_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(is_active=True),
+        write_only=True,
+        many=True,
+        required=False,
+        source='products'
+    )
+    is_currently_active = serializers.SerializerMethodField()
+    product_count = serializers.SerializerMethodField()
+    remaining_days = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Promotion
+        fields = [
+            'id', 'promotion_type', 'title', 'description',
+            'start_date', 'end_date', 'is_active', 'is_currently_active',
+            'products', 'product_ids', 'product_count', 'remaining_days',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_is_currently_active(self, obj):
+        """Check if promotion is currently active"""
+        return obj.is_currently_active
+    
+    def get_product_count(self, obj):
+        """Get count of products in this promotion"""
+        return obj.products.count()
+    
+    def get_remaining_days(self, obj):
+        """Get remaining days for the promotion"""
+        from django.utils import timezone
+        now = timezone.now()
+        if obj.end_date > now:
+            delta = obj.end_date - now
+            return delta.days
+        return 0
+
+
+class PromotionCreateUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating and updating promotions.
+    
+    Validates:
+    - end_date must be after start_date
+    - All required fields are provided
+    
+    Fields:
+        promotion_type (required): 'free_shipping' or 'free_gift'
+        title (required): Promotion title/name
+        description (optional): Detailed description
+        start_date (required): When promotion starts (ISO 8601 datetime)
+        end_date (required): When promotion ends (ISO 8601 datetime)
+        is_active (optional): Whether promotion is enabled (default: True)
+        product_ids (optional): List of product IDs to associate
+    """
+    product_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Product.objects.filter(is_active=True),
+        many=True,
+        required=False,
+        source='products'
+    )
+    
+    class Meta:
+        model = Promotion
+        fields = [
+            'promotion_type', 'title', 'description',
+            'start_date', 'end_date', 'is_active', 'product_ids'
+        ]
+    
+    def validate(self, data):
+        """
+        Validate that end_date is after start_date.
+        
+        Raises:
+            serializers.ValidationError: If end_date <= start_date
+        """
+        if 'start_date' in data and 'end_date' in data:
+            if data['end_date'] <= data['start_date']:
+                raise serializers.ValidationError(
+                    "End date must be after start date."
+                )
+        return data

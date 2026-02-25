@@ -4,7 +4,7 @@ from .models import (
     Category, Brand, Product, VariantAttribute, VariantAttributeValue,
     ProductVariant,
     # ProductVariantAttributeValue, 
-    ProductImage, ProductPromotion,
+    ProductImage, Promotion,
     ProductCombo,
     ProductComboItem,
     # ProductComparison,
@@ -81,7 +81,8 @@ class CategoryAdmin(admin.ModelAdmin):
         if obj.image:
             return format_html(
                 '<img src="{}" width="50" height="50" style="object-fit:contain;" />',
-                obj.image.url
+                obj.image
+                
             )
         return '-'
     image_preview.short_description = 'Image'
@@ -115,7 +116,7 @@ class BrandAdmin(admin.ModelAdmin):
         if obj.logo:
             return format_html(
                 '<img src="{}" width="50" height="50" style="object-fit:contain;" />',
-                obj.logo.url
+                obj.logo
             )
         return '-'
     logo_preview.short_description = 'Logo'
@@ -546,10 +547,9 @@ class ProductImageAdmin(admin.ModelAdmin):
 # -----------------------------------
 # Product Promotion Admin
 # -----------------------------------
-@admin.register(ProductPromotion)
-class ProductPromotionAdmin(admin.ModelAdmin):
+@admin.register(Promotion)
+class PromotionAdmin(admin.ModelAdmin):
     list_display = (
-        "product",
         "title",
         "promotion_type",
         "is_active",
@@ -564,20 +564,19 @@ class ProductPromotionAdmin(admin.ModelAdmin):
         "end_date",
     )
     search_fields = (
-        "product__name",
         "title",
         "description",
     )
     date_hierarchy = "start_date"
-    autocomplete_fields = ["product"]
+    filter_horizontal = ["products"]
     ordering = ("-start_date",)
 
     fieldsets = (
-        ("Product", {
-            "fields": ("product","promotion_type",
-                "title",
-                "description",
-                )
+        ("Promotion Info", {
+            "fields": ("title", "promotion_type", "description")
+        }),
+        ("Associated Products", {
+            "fields": ("products",)
         }),
         ("Schedule & Status", {
             "fields": (
@@ -589,13 +588,15 @@ class ProductPromotionAdmin(admin.ModelAdmin):
     )
     
     def action_buttons(self, obj):
-        edit_url = reverse('admin:product_productpromotion_change', args=[obj.id])
+        edit_url = reverse('admin:product_promotion_change', args=[obj.id])
         return format_html(
             '<a href="{}" style="padding:4px 10px; background-color:#28A745; color:white; '
             'border-radius:5px; text-decoration:none; margin-right:5px; font-weight:bold;">Edit</a>',
             edit_url
         )
     action_buttons.short_description = 'Actions'
+    
+    
 
 
 @admin.register(Deal)
@@ -640,10 +641,10 @@ class DealAdmin(admin.ModelAdmin):
             'fields': ('views', 'purchases'),
             'classes': ('collapse',)
         }),
-        ('Extra Benefits', {
-            'fields': ('free_shipping', 'free_gift_text'),
-            'classes': ('collapse',)
-        }),
+        # ('Extra Benefits', {
+        #     'fields': ('free_shipping', 'free_gift_text'),
+        #     # 'classes': ('collapse',)
+        # }),
         ('Timing', {
             'fields': ('start_at', 'end_at')
         }),

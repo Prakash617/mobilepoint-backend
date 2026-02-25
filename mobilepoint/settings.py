@@ -105,17 +105,17 @@ CORS_ALLOW_CREDENTIALS = True
 
 # CORS Settings (adjust for production)
 # Get the string and split it into a list
-# CORS_ALLOWED_ORIGINS = [
-#     origin.strip()
-#     for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
-#     if origin.strip()
-# ]
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 
-# CSRF_TRUSTED_ORIGINS = [
-#     origin.strip()
-#     for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-#     if origin.strip()
-# ]
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+    if origin.strip()
+]
 
 
 
@@ -235,7 +235,6 @@ MEDIA_URL = os.getenv("MEDIA_URL")
 #         "product.productimage",
 #         "product.recentlyviewedproduct",
 #     ],
-   
 #     # "submenus_models": [
 #     #     "product.variantattributevalue",
 #     #     "product.productvariantattributevalue",
@@ -395,7 +394,7 @@ DASHUB_SETTINGS = {
         "product.productvariant",
         "product.productvariantattributevalue",
         "product.productimage",
-        "product.productpromotion",
+        "product.promotion",
         "product.deal",
         "product.productcombo",
         "product.productcomboitem",
@@ -431,7 +430,7 @@ DASHUB_SETTINGS = {
         "accounts": 10,
         "product": 20,
         "orders": 30,
-        "wishlist": 40,
+        # "wishlist": 40,
         "website": 50,
 
         "accounts.user": 1,
@@ -479,7 +478,7 @@ DASHUB_SETTINGS = {
         "product.variantattributevalue": "hgi hgi-stroke hgi-arc-browser",
         "product.productvariant": "hgi hgi-stroke hgi-layers-01",
         "product.productvariantattributevalue": "hgi hgi-stroke hgi-link-02",
-        "product.productpromotion": "hgi hgi-stroke hgi-gift",
+        "product.promotion": "hgi hgi-stroke hgi-gift",
         "product.deal": "hgi hgi-stroke hgi-flash",
         "product.productcombo":"hgi hgi-stroke hgi-store-management-01",
 
@@ -515,7 +514,7 @@ DASHUB_SETTINGS = {
                 "url": "/admin/accounts/user/",
                 "submenu": [
                     {"model": "accounts.user", "order": 1},
-                    {"model": "auth.group", "order": 2},
+                    # {"model": "auth.group", "order": 2},
                 ],
                 "permissions": ["accounts.view_user", "accounts.view_group"],
             }
@@ -549,7 +548,7 @@ DASHUB_SETTINGS = {
                 "icon": "hgi hgi-stroke hgi-gift",
                 "url": "/admin/product/promotions/",
                 "submenu": [
-                    {"model": "product.productpromotion", "order": 1},
+                    {"model": "product.promotion", "order": 1},
                     {"model": "product.deal", "order": 2},
                     {"model": "product.productcombo", "order": 3},
                     # {"model": "product.frequentlyboughttogether", "order": 3},
@@ -557,7 +556,7 @@ DASHUB_SETTINGS = {
                 ],
             },
         ],
-        "Order": [
+        "order": [
             {
                 "name": "Orders",
                 "icon": "hgi hgi-stroke hgi-list-view",
@@ -571,8 +570,6 @@ DASHUB_SETTINGS = {
                     
                 ],
             },
-        
-        
         ],
         # "customsidebar": [
         #     {
@@ -581,7 +578,7 @@ DASHUB_SETTINGS = {
         #         "url": "/admin/website/content/",
         #         "submenu": [
         #             {"model": "website.carousel", "order": 1},
-        #             {"name": "Custom page", "url": "admin/custompage/", "icon": "fa-solid fa-folder", "order": 1},
+        #             {"name": "Custom page", "url": "custompage/", "icon": "fa-solid fa-folder", "order": 1},
                     
                     
         #         ],

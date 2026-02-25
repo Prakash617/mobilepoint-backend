@@ -15,7 +15,7 @@ class SecureAdminSite(AdminSite):
         user = request.user
         return user.is_active and user.is_staff
 
-    def get_app_list(self, request):
+    def get_app_list(self, request, app_label=None):
         """
         Filter sidebar apps & models based on permissions.
         Respects:
@@ -24,7 +24,11 @@ class SecureAdminSite(AdminSite):
         - Direct user permissions
         - Custom user model
         """
-        app_list = super().get_app_list(request)
+        try:
+            app_list = super().get_app_list(request, app_label)
+        except TypeError:
+            # Backward compatible with Django versions without app_label arg.
+            app_list = super().get_app_list(request)
 
         user = request.user
         if user.is_superuser:

@@ -17,7 +17,8 @@ from .models import (
     Deal,
     RecentlyViewedProduct,
     ProductCombo,
-    ProductComboItem
+    ProductComboItem,
+    Promotion
 )
 from reviews.models import ProductReview
 from .serializers import (
@@ -35,6 +36,9 @@ from .serializers import (
     ProductComboListSerializer,
     ProductComboDetailSerializer,
     ProductComboCreateUpdateSerializer,
+    PromotionListSerializer,
+    PromotionDetailSerializer,
+    PromotionCreateUpdateSerializer,
 )
 from .utils import add_recently_viewed
 from rest_framework.permissions import (
@@ -140,7 +144,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
         Product.objects.filter(is_active=True)
         .select_related("category", "brand")
-        .prefetch_related("images", "variants")
+        .prefetch_related("images", "variants", "promotions")
     )
     lookup_field = "slug"
     filterset_class = ProductFilter
@@ -412,7 +416,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             Product.objects.filter(is_active=True)
             .exclude(pk=product.pk)
             .select_related("category", "brand")
-            .prefetch_related("images", "variants")
+            .prefetch_related("images", "variants", "promotions")
         )
 
         # related by same category or same brand
@@ -471,6 +475,8 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             Product.objects
             .filter(is_active=True)
             .filter(category_q)
+            .select_related("category", "brand")
+            .prefetch_related("images", "variants", "promotions")
             .annotate(
                 min_price=Min("variants__price"),
                 total_sold=Sum("variants__sold_quantity"),
@@ -842,3 +848,276 @@ class ProductComboViewSet(viewsets.ModelViewSet):
         from .serializers import ProductComboItemSerializer
         serializer = ProductComboItemSerializer(items, many=True, context={'request': request})
         return Response(serializer.data)
+
+
+# ===== PROMOTION VIEWSET =====
+
+class PromotionViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for managing promotions (Free Shipping, Free Gift, etc.)
+    
+    Standard endpoints:
+        list: GET /promotions/ - List all promotions with filtering
+        create: POST /promotions/ - Create a new promotion (admin only)
+        retrieve: GET /promotions/{id}/ - Get promotion details
+        update: PUT /promotions/{id}/ - Update a promotion (admin only)
+        partial_update: PATCH /promotions/{id}/ - Partially update a promotion (admin only)
+        destroy: DELETE /promotions/{id}/ - Delete a promotion (admin only)
+    
+    Custom endpoints:
+        active: GET /promotions/active/ - Get all currently active promotions (time-based)
+        by_type: GET /promotions/by_type/?type=free_shipping - Filter by promotion type
+        upcoming: GET /promotions/upcoming/ - Get promotions that haven't started yet
+        expired: GET /promotions/expired/ - Get promotions that have ended
+        summary: GET /promotions/summary/ - Get statistics summary
+        products: GET /promotions/{id}/products/ - Get products in a promotion
+    
+    Query Parameters:
+        - promotion_type: Filter by type ('free_shipping' or 'free_gift')
+        - is_active: Filter by active status (true/false)
+        - search: Search in title and description
+        - ordering: Order by start_date, end_date, or created_at
+        - limit: Limit results per page
+        - offset: Pagination offset
+    
+    Permissions:
+        - Read (list/retrieve): Available to all users
+        - Create/Update/Delete: Admin/Staff only
+    """
+    
+    queryset = Promotion.objects.prefetch_related('products')
+    lookup_field = 'id'
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.SearchFilter,
+        filters.OrderingFilter,
+    ]
+    filterset_fields = ['promotion_type', 'is_active']
+    search_fields = ['title', 'description']
+    ordering_fields = ['start_date', 'end_date', 'created_at']
+    ordering = ['-start_date']
+    pagination_class = ProductPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    def get_serializer_class(self):
+        """
+        Return appropriate serializer based on the action.
+        
+        - Create/Update: PromotionCreateUpdateSerializer (validates input, manages dates)
+        - Retrieve: PromotionDetailSerializer (full details with products)
+        - List/Other: PromotionListSerializer (simplified view)
+        """
+        if self.action in ['create', 'update', 'partial_update']:
+            return PromotionCreateUpdateSerializer
+        elif self.action == 'retrieve':
+            return PromotionDetailSerializer
+        return PromotionListSerializer
+    
+    def get_permissions(self):
+        """
+        Override permissions:
+        - Create, Update, Delete: Authenticated users only (admin check via staff_required)
+        - All other actions: Allow any (read-only)
+        """
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated()]
+        return [AllowAny()]
+    
+    @action(detail=False, methods=['get'], url_path='active', url_name='active-promotions')
+    def active(self, request):
+        """
+        Retrieve all currently active promotions.
+        
+        A promotion is considered active if:
+            - is_active = True
+            - start_date <= current_time
+            - end_date >= current_time
+        
+        Returns: Paginated list of active PromotionListSerializer objects
+        """
+        promotions = Promotion.active()
+        
+        page = self.paginate_queryset(promotions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(promotions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='by-type', url_name='by-type')
+    def by_type(self, request):
+        """
+        Retrieve promotions filtered by type.
+        
+        Query Parameters:
+            type (required): The promotion type filter
+                - 'free_shipping': Free shipping promotions
+                - 'free_gift': Free gift promotions
+        
+        Example: GET /promotions/by-type/?type=free_shipping
+        
+        Returns: Paginated list of promotions matching the type
+        Status Codes:
+            - 200: Success
+            - 400: Missing or invalid 'type' parameter
+        """
+        promotion_type = request.query_params.get('type')
+        
+        if not promotion_type:
+            return Response(
+                {'error': 'type query parameter is required (free_shipping or free_gift)'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Validate type
+        valid_types = [choice[0] for choice in Promotion.PromotionType.choices]
+        if promotion_type not in valid_types:
+            return Response(
+                {'error': f'Invalid type. Choose from: {", ".join(valid_types)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        promotions = self.get_queryset().filter(promotion_type=promotion_type)
+        
+        page = self.paginate_queryset(promotions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(promotions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'], url_path='products', url_name='promotion-products')
+    def products(self, request, id=None):
+        """
+        Retrieve all active products associated with a specific promotion.
+        
+        Path Parameters:
+            id: The ID of the promotion
+        
+        Returns: Paginated list of ProductListSerializer objects
+        
+        Example: GET /promotions/1/products/
+        """
+        promotion = self.get_object()
+        products = (
+            promotion.products.filter(is_active=True)
+            .select_related('category', 'brand')
+            .prefetch_related('images', 'variants', 'promotions')
+        )
+        
+        page = self.paginate_queryset(products)
+        if page is not None:
+            serializer = ProductListSerializer(page, many=True, context={'request': request})
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = ProductListSerializer(products, many=True, context={'request': request})
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='upcoming', url_name='upcoming-promotions')
+    def upcoming(self, request):
+        """
+        Retrieve all upcoming promotions (not yet started).
+        
+        Returns promotions where:
+            - is_active = True
+            - start_date > current_time
+        
+        Results are ordered by start_date (earliest first).
+        
+        Returns: Paginated list of upcoming PromotionListSerializer objects
+        """
+        now = timezone.now()
+        promotions = self.get_queryset().filter(
+            is_active=True,
+            start_date__gt=now
+        ).order_by('start_date')
+        
+        page = self.paginate_queryset(promotions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(promotions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='expired', url_name='expired-promotions')
+    def expired(self, request):
+        """
+        Retrieve all expired promotions (already ended).
+        
+        Returns promotions where:
+            - end_date < current_time
+        
+        Results are ordered by end_date (most recent first).
+        
+        Returns: Paginated list of expired PromotionListSerializer objects
+        """
+        now = timezone.now()
+        promotions = self.get_queryset().filter(
+            end_date__lt=now
+        ).order_by('-end_date')
+        
+        page = self.paginate_queryset(promotions)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(promotions, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], url_path='summary', url_name='promotions-summary')
+    def summary(self, request):
+        """
+        Retrieve promotional statistics and summary information.
+        
+        Returns a summary object containing:
+            - total_promotions: Total number of promotions in the system
+            - active_promotions: Number of currently active promotions
+            - inactive_promotions: Number of inactive promotions
+            - upcoming_promotions: Number of promotions not yet started
+            - expired_promotions: Number of promotions that have ended
+            - by_type: Breakdown by promotion type
+                - free_shipping: Count of free shipping promotions
+                - free_gift: Count of free gift promotions
+        
+        Returns: JSON object with statistics (not paginated)
+        
+        Example response:
+            {
+                "total_promotions": 15,
+                "active_promotions": 5,
+                "inactive_promotions": 3,
+                "upcoming_promotions": 4,
+                "expired_promotions": 3,
+                "by_type": {
+                    "free_shipping": 8,
+                    "free_gift": 7
+                }
+            }
+        """
+        now = timezone.now()
+        
+        stats = {
+            'total_promotions': Promotion.objects.count(),
+            'active_promotions': Promotion.active().count(),
+            'inactive_promotions': Promotion.objects.filter(is_active=False).count(),
+            'upcoming_promotions': Promotion.objects.filter(
+                is_active=True,
+                start_date__gt=now
+            ).count(),
+            'expired_promotions': Promotion.objects.filter(
+                end_date__lt=now
+            ).count(),
+            'by_type': {
+                'free_shipping': Promotion.objects.filter(
+                    promotion_type=Promotion.PromotionType.FREE_SHIPPING
+                ).count(),
+                'free_gift': Promotion.objects.filter(
+                    promotion_type=Promotion.PromotionType.FREE_GIFT
+                ).count(),
+            }
+        }
+        
+        return Response(stats)

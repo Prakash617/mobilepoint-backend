@@ -9,6 +9,7 @@ import random
 import string
 from django.db.models import Avg, Count
 from django.core.exceptions import ValidationError
+from filehub.fields import ImagePickerField
 
 
 
@@ -18,7 +19,7 @@ class Category(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     description = HTMLField(blank=True, null=True)
     parent = models.ForeignKey('self', on_delete=models.PROTECT, null=True, blank=True, related_name='children')
-    image = models.ImageField(upload_to='categories/', blank=True, null=True)
+    image = ImagePickerField(upload_to='categories/', blank=True, null=True)
     is_featured = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -32,7 +33,9 @@ class Category(models.Model):
     def __str__(self):
         
         return self.name
-
+    
+    
+from filehub.fields import ImagePickerField
 
 class Brand(models.Model):
     """Electronics brands like Apple, Samsung, etc."""
@@ -43,7 +46,7 @@ class Brand(models.Model):
     )    
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, unique=True)
-    logo = models.ImageField(upload_to='brands/', blank=True, null=True)
+    logo = ImagePickerField(blank=True, null=True)
     description = HTMLField(blank=True)
     is_featured = models.BooleanField(default=False)
 
@@ -362,35 +365,76 @@ class ProductImage(models.Model):
         super().save(*args, **kwargs)
         
         
-class ProductPromotion(models.Model):
-    """Promotions like Free Shipping, Free Gift, etc."""
-    PROMOTION_TYPE = [
-        ('free_shipping', 'Free Shipping'),
-        ('free_gift', 'Free Gift'),
-        # ('discount', 'Discount'),
-        # ('cashback', 'Cashback'),
-    ]
-    
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='promotions')
-    promotion_type = models.CharField(max_length=20, choices=PROMOTION_TYPE)
-    title = models.CharField(max_length=100)
-    description = HTMLField(blank=True)
-    # icon = models.CharField(max_length=50, blank=True)  # Icon class or emoji
-    start_date = models.DateTimeField()
-    end_date = models.DateTimeField()
-    is_active = models.BooleanField(default=True)
+class Promotion(models.Model):
+    """Main promotion model (Free Shipping, Free Gift, etc.)"""
 
-    def __str__(self):
-        return f"{self.product.name} - {self.title}"
-    
+    class PromotionType(models.TextChoices):
+        FREE_SHIPPING = "free_shipping", "Free Shipping"
+        FREE_GIFT = "free_gift", "Free Gift"
+
+    promotion_type = models.CharField(
+        max_length=20,
+        choices=PromotionType.choices,
+        db_index=True
+    )
+
+    title = models.CharField(max_length=150)
+    description = HTMLField(
+        blank=True, 
+        null=True, 
+        help_text="Only fill for free_gift promotion type" 
+        
+    )
+
+    start_date = models.DateTimeField(db_index=True)
+    end_date = models.DateTimeField(db_index=True)
+
+    is_active = models.BooleanField(default=True, db_index=True)
+
+    products = models.ManyToManyField(
+        "Product",
+        related_name="promotions",
+        blank=True
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
-        verbose_name = "Product Promotion"
-        verbose_name_plural = "Product Promotions"
-    
+        ordering = ["-start_date"]
+        indexes = [
+            models.Index(fields=["is_active", "start_date", "end_date"]),
+        ]
+        verbose_name = "Promotion"
+        verbose_name_plural = "Promotion"
+    def __str__(self):
+        return self.title
+
+    # ✅ Validation: prevent wrong dates
+    def clean(self):
+        if self.start_date and self.end_date:
+            if self.end_date <= self.start_date:
+                raise ValidationError("End date must be after start date.")
+
+    # ✅ Safe active check
     @property
     def is_currently_active(self):
         now = timezone.now()
-        return self.is_active and self.start_date <= now <= self.end_date
+        return (
+            self.is_active
+            and self.start_date <= now
+            and self.end_date >= now
+        )
+
+    # ✅ Reusable queryset helper
+    @classmethod
+    def active(cls):
+        now = timezone.now()
+        return cls.objects.filter(
+            is_active=True,
+            start_date__lte=now,
+            end_date__gte=now
+        )
     
 
 class ProductCombo(models.Model):
@@ -413,7 +457,7 @@ class ProductCombo(models.Model):
 
     class Meta:
         verbose_name = "Product Combo"
-        verbose_name_plural = "Product Combos"
+        verbose_name_plural = "Product Combo"
         ordering = ['-created_at']
 
     def __str__(self):
@@ -494,7 +538,7 @@ class Deal(models.Model):
 
     class Meta:
         verbose_name = "Deal"
-        verbose_name_plural = "Deals"
+        verbose_name_plural = "Deal"
         ordering = ['-is_featured', 'display_order', '-created_at']
 
     def __str__(self):

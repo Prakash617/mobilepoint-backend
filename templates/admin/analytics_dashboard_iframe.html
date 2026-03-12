@@ -367,7 +367,7 @@
                         {% for order in recent_orders %}
                         <tr class="border-t border-gray-100 hover:bg-gray-50">
                             <td class="px-6 py-4">
-                                <p class="font-medium text-blue-600">{{ order.order_number }}</p>
+                                <a href="{% url 'admin:orders_order_change' order.id %}" target="_top" class="font-medium text-blue-600 hover:underline">{{ order.order_number }}</a>
                             </td>
                             <td class="px-6 py-4">
                                 <p class="text-gray-900">{{ order.user.first_name }} {{ order.user.last_name }}</p>

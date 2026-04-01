@@ -14,7 +14,7 @@ class ProductVariantMinimalSerializer(serializers.Serializer):
     product_id = serializers.IntegerField(source='product.id')
     image = serializers.SerializerMethodField()
     
-    def get_image(self, obj):
+    def get_image(self, obj) -> str | None:
         # Assuming your ProductVariant has an image field or related images
         if hasattr(obj, 'image') and obj.image:
             return obj.image.url
@@ -45,7 +45,7 @@ class WishlistItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['added_at', 'price_when_added']
     
-    def get_price_difference(self, obj):
+    def get_price_difference(self, obj) -> float:
         return float(obj.get_price_difference())
 
 

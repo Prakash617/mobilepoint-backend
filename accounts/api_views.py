@@ -20,7 +20,7 @@ from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.core.exceptions import ObjectDoesNotExist
-from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 
@@ -428,3 +428,33 @@ class LogoutView(APIView):
             {"detail": "Logged out successfully"},
             status=205
         )
+
+
+@extend_schema(tags=["Auth"])
+class AuthTokenObtainPairView(TokenObtainPairView):
+    """SimpleJWT token pair endpoint tagged for Swagger grouping."""
+
+
+@extend_schema(tags=["Auth"])
+class AuthTokenRefreshView(TokenRefreshView):
+    """SimpleJWT token refresh endpoint tagged for Swagger grouping."""
+
+
+@extend_schema(tags=["Auth"])
+class AuthTokenVerifyView(TokenVerifyView):
+    """SimpleJWT token verify endpoint tagged for Swagger grouping."""
+
+
+@extend_schema(exclude=True)
+class HiddenTokenObtainPairView(AuthTokenObtainPairView):
+    """Project-level token endpoint hidden from Swagger."""
+
+
+@extend_schema(exclude=True)
+class HiddenTokenRefreshView(AuthTokenRefreshView):
+    """Project-level token refresh endpoint hidden from Swagger."""
+
+
+@extend_schema(exclude=True)
+class HiddenTokenVerifyView(AuthTokenVerifyView):
+    """Project-level token verify endpoint hidden from Swagger."""

@@ -113,7 +113,13 @@ class OrderViewSet(viewsets.ModelViewSet):
     ordering = ['-created_at']
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Order.objects.none()
+
         user = self.request.user
+        if not user or not user.is_authenticated:
+            return Order.objects.none()
+
         if user.is_staff:
             return Order.objects.all().select_related('user').prefetch_related('items', 'status_history')
         return Order.objects.filter(user=user).select_related('user').prefetch_related('items', 'status_history')
@@ -370,7 +376,13 @@ class OrderItemViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['order']
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return self.queryset.none()
+
         user = self.request.user
+        if not user or not user.is_authenticated:
+            return self.queryset.none()
+
         if user.is_staff:
             return self.queryset
         return self.queryset.filter(order__user=user)
@@ -416,7 +428,13 @@ class OrderStatusHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ['order', 'status']
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return self.queryset.none()
+
         user = self.request.user
+        if not user or not user.is_authenticated:
+            return self.queryset.none()
+
         if user.is_staff:
             return self.queryset
         return self.queryset.filter(order__user=user)

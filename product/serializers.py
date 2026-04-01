@@ -33,7 +33,7 @@ class CategorySerializer(serializers.ModelSerializer):
         
 
     
-    def get_total_products(self, obj):
+    def get_total_products(self, obj) -> int:
         """
         Count active products in this category and child categories
         """
@@ -47,7 +47,7 @@ class CategorySerializer(serializers.ModelSerializer):
             category__is_active=True
         ).distinct().count()
         
-    def get_children(self, obj):
+    def get_children(self, obj) -> list[dict]:
         # This returns the subcategories (Speaker, DSLR, etc.)
         children = obj.children.filter(is_active=True)[:4] # Limit to 4 for UI consistency
         return CategorySerializer(children, many=True, context=self.context).data
@@ -149,10 +149,10 @@ class ProductListSerializer(serializers.ModelSerializer):
             'free_shipping', 'free_gift', 'is_new', 'discount','available_attributes',
         ]
     
-    def get_is_new(self, obj):
+    def get_is_new(self, obj) -> bool:
         return obj.is_new
     
-    def get_available_attributes(self, obj):
+    def get_available_attributes(self, obj) -> dict[str, list[str]]:
         """
         Returns a dictionary of available attributes and their values
         for a given product.
@@ -173,7 +173,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         # Convert sets to lists for JSON serialization
         return {k: list(v) for k, v in attributes.items()}
     
-    def get_discount(self, obj):
+    def get_discount(self, obj) -> dict | None:
         """
         Returns discount info for the product:
         - Compare variant price with product base_price
@@ -189,7 +189,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             }
         return None
     
-    def get_primary_image(self, obj):
+    def get_primary_image(self, obj) -> str | None:
         primary = obj.images.filter(is_primary=True).first()
         if primary:
             request = self.context.get('request')
@@ -198,13 +198,13 @@ class ProductListSerializer(serializers.ModelSerializer):
             return primary.image.url
         return None
     
-    def get_default_variant(self, obj):
+    def get_default_variant(self, obj) -> dict | None:
         default = obj.variants.filter(is_default=True).first()
         if default:
             return ProductVariantListSerializer(default, context=self.context).data
         return None
     
-    def get_price_range(self, obj):
+    def get_price_range(self, obj) -> dict | None:
         variants = obj.variants.filter(is_active=True)
         if variants.exists():
             prices = variants.values_list('price', flat=True)
@@ -215,7 +215,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             return {'min': float(min_price), 'max': float(max_price), 'same': False}
         return None
     
-    def get_free_shipping(self, obj):
+    def get_free_shipping(self, obj) -> bool:
         now = timezone.now()
         return obj.promotions.filter(
             promotion_type='free_shipping',
@@ -224,7 +224,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             end_date__gte=now
         ).exists()
     
-    def get_free_gift(self, obj):
+    def get_free_gift(self, obj) -> bool:
         now = timezone.now()
         return obj.promotions.filter(
             promotion_type='free_gift',
@@ -256,7 +256,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'deals'
         ]
     
-    def get_available_attributes(self, obj):
+    def get_available_attributes(self, obj) -> list[dict]:
         """Get all unique attributes available for this product's variants"""
         attributes = {}
         
@@ -291,7 +291,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         
         return list(attributes.values())
 
-    def get_free_shipping(self, obj):
+    def get_free_shipping(self, obj) -> bool:
         now = timezone.now()
         return obj.promotions.filter(
             promotion_type='free_shipping',
@@ -300,7 +300,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             end_date__gte=now
         ).exists()
     
-    def get_free_gift(self, obj):
+    def get_free_gift(self, obj) -> bool:
         now = timezone.now()
         return obj.promotions.filter(
             promotion_type='free_gift',
@@ -309,7 +309,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             end_date__gte=now
         ).exists()
     
-    def get_deals(self, obj):
+    def get_deals(self, obj) -> list[dict]:
         """Get active deals for this product"""
         now = timezone.now()
         deals = obj.deals.filter(
@@ -319,7 +319,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         )
         return DealListSerializer(deals, many=True, context=self.context).data
         
-    def _get_promotion_info(self, obj, promotion_type):
+    def _get_promotion_info(self, obj, promotion_type: str) -> dict | None:
         from django.utils.timezone import now
         from django.utils.timesince import timesince
 
@@ -344,7 +344,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         }
 
     # SerializerMethodField
-    def get_promotions(self, obj):
+    def get_promotions(self, obj) -> dict:
         return {
             "free_shipping": self._get_promotion_info(obj, "free_shipping"),
             "free_gift": self._get_promotion_info(obj, "free_gift"),
@@ -371,7 +371,7 @@ class DealListSerializer(serializers.ModelSerializer):
             'total_quantity', 'sold_quantity', 'remaining_quantity', 'progress_percentage'
         ]
     
-    def get_primary_image(self, obj):
+    def get_primary_image(self, obj) -> dict | None:
         image = obj.product.images.filter(is_primary=True).first()
         
         if image:
@@ -460,7 +460,7 @@ class ProductComboListSerializer(serializers.ModelSerializer):
             'is_active', 'is_featured', 'item_count'
         ]
     
-    def get_item_count(self, obj):
+    def get_item_count(self, obj) -> int:
         return obj.items.count()
 
 
@@ -535,15 +535,15 @@ class PromotionListSerializer(serializers.ModelSerializer):
             'product_count', 'remaining_days', 'created_at'
         ]
     
-    def get_product_count(self, obj):
+    def get_product_count(self, obj) -> int:
         """Get count of products in this promotion"""
         return obj.products.count()
     
-    def get_is_currently_active(self, obj):
+    def get_is_currently_active(self, obj) -> bool:
         """Check if promotion is currently active"""
         return obj.is_currently_active
     
-    def get_remaining_days(self, obj):
+    def get_remaining_days(self, obj) -> int:
         """Get remaining days for the promotion"""
         from django.utils import timezone
         now = timezone.now()
@@ -586,15 +586,15 @@ class PromotionDetailSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at'
         ]
     
-    def get_is_currently_active(self, obj):
+    def get_is_currently_active(self, obj) -> bool:
         """Check if promotion is currently active"""
         return obj.is_currently_active
     
-    def get_product_count(self, obj):
+    def get_product_count(self, obj) -> int:
         """Get count of products in this promotion"""
         return obj.products.count()
     
-    def get_remaining_days(self, obj):
+    def get_remaining_days(self, obj) -> int:
         """Get remaining days for the promotion"""
         from django.utils import timezone
         now = timezone.now()

@@ -16,17 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path,include
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-    
-)
 from django.conf import settings
 from django.conf.urls.static import static
 
 from rest_framework.routers import DefaultRouter
-from product.api_views import ProductViewSet
+from product.api_views import ProductRelatedPublicView
+from accounts.api_views import (
+    HiddenTokenObtainPairView,
+    HiddenTokenRefreshView,
+    HiddenTokenVerifyView,
+)
 from .admin_views import filehub_embed, analytic_dashboard, custompage
 from .admin_site import secure_admin_site
 from drf_spectacular.views import (
@@ -42,13 +41,13 @@ urlpatterns = [
     path('admin/', include('filehub.urls')),
     path('admin/custompage/', custompage, name='custom_page'),
     path("filemanager/", filehub_embed, name="admin_filehub"),
-    path('auth/', include('accounts.api_urls')),
+    path('api/auth/', include('accounts.api_urls')),
     path("analytic_dashboard/", analytic_dashboard, name="analytic_dashboard"),
     # path('admin/', admin.site.urls),
     path("admin/", secure_admin_site.urls),
     path('product/', include('product.api_urls')),
     # Direct route for frontend-friendly related products URL
-    path('products/<slug:slug>/related/', ProductViewSet.as_view({'get': 'related'}), name='product-related'),
+    path('products/<slug:slug>/related/', ProductRelatedPublicView.as_view({'get': 'related'}), name='product-related'),
     path('orders/', include('orders.api_urls')),
     path('wishlist/', include('wishlist.api_urls')),
     path('website/', include('website.api_urls')),
@@ -56,9 +55,9 @@ urlpatterns = [
     path('menu/', include('menu.api_urls')),
     
      # ------------------jwt------------
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
-    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('api/token/', HiddenTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', HiddenTokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', HiddenTokenVerifyView.as_view(), name='token_verify'),
     path('api/', include(router.urls)),
     path('tinymce/', include('tinymce.urls')),
     # Optional: Django REST Framework browsable API authentication

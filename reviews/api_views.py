@@ -5,10 +5,12 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from product.models import Product
 from django.db.models import Avg, Count
+from drf_spectacular.utils import extend_schema
 
 from .models import ProductReview
 from .serializers import ProductReviewSerializer
 
+@extend_schema(tags=["Reviews"])
 class ProductReviewViewSet(viewsets.ModelViewSet):
     """
     API endpoint for Product Reviews

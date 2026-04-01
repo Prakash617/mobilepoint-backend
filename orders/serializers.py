@@ -41,7 +41,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         
         read_only_fields = ['subtotal', 'product_name', 'variant_name', 'created_at', 'original_price', 'discount_percent', 'promotions', 'free_gift_detail']
     
-    def get_promotions(self, obj):
+    def get_promotions(self, obj) -> list[dict]:
         """Get all promotions applied to this order item"""
         promotions = obj.promotions.all()
         return [{
@@ -51,7 +51,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             'type_display': p.get_promotion_type_display()
         } for p in promotions]
     
-    def get_combo_items(self, obj):
+    def get_combo_items(self, obj) -> list[dict] | None:
         """Get child items if this is a combo parent"""
         if obj.is_combo_parent:
             child_items = obj.combo_items.all()

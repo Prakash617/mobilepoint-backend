@@ -47,11 +47,14 @@ from rest_framework.permissions import (
     AllowAny,
 )
 from .filters import DealFilter, ProductFilter
+from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 
 from django.db.models import Count, Case, When, IntegerField
 
 
+@extend_schema(tags=["Product Categories"])
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for categories
@@ -117,6 +120,8 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(top_categories, many=True)
         return Response(serializer.data)
 
+
+@extend_schema(tags=["Product Brands"])
 class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for brands
@@ -129,6 +134,7 @@ class BrandViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["name", "description"]
 
 
+@extend_schema(tags=["Products"])
 class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for products
@@ -185,6 +191,16 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(featured_products, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="category_slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                required=True,
+            )
+        ]
+    )
     @action(detail=False, methods=["get"], url_path="category/(?P<category_slug>[^/.]+)")
     def by_category(self, request, category_slug=None):
         """Get products by category slug"""
@@ -216,6 +232,16 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name="brand_slug",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.PATH,
+                required=True,
+            )
+        ]
+    )
     @action(detail=False, methods=["get"], url_path="brand/(?P<brand_slug>[^/.]+)")
     def by_brand(self, request, brand_slug=None):
         """Get products by brand slug"""
@@ -574,6 +600,15 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
                 )
 
 
+class ProductRelatedPublicView(ProductViewSet):
+    """Frontend-friendly related products route hidden from OpenAPI docs."""
+
+    @extend_schema(exclude=True)
+    def related(self, request, slug=None):
+        return super().related(request, slug=slug)
+
+
+@extend_schema(tags=["Product Variants"])
 class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for product variants
@@ -603,6 +638,7 @@ class ProductVariantViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
+@extend_schema(tags=["Deals"])
 class DealViewSet(viewsets.ModelViewSet):
     """ViewSet for deals - simplified version"""
 
@@ -734,6 +770,7 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+@extend_schema(tags=["Recently Viewed"])
 class RecentlyViewedProductViewSet(viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for recently viewed products
@@ -743,10 +780,12 @@ class RecentlyViewedProductViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = None  # optional, remove pagination
 
     def get_queryset(self):
-        # try:
-        #     user = self.request.user
-        # except: 
+        if getattr(self, 'swagger_fake_view', False):
+            return RecentlyViewedProduct.objects.none()
+
         user = self.request.user
+        if not user or not user.is_authenticated:
+            return RecentlyViewedProduct.objects.none()
 
 
         # get limit from query params, default = 10
@@ -788,6 +827,8 @@ def get_categories_by_brand(request):
 
 # ===== PRODUCT COMBO VIEWSET =====
 
+
+@extend_schema(tags=["Product Combos"])
 class ProductComboViewSet(viewsets.ModelViewSet):
     """
     API endpoint for product combos/bundles
@@ -852,6 +893,8 @@ class ProductComboViewSet(viewsets.ModelViewSet):
 
 # ===== PROMOTION VIEWSET =====
 
+
+@extend_schema(tags=["Promotions"])
 class PromotionViewSet(viewsets.ModelViewSet):
     """
     API endpoint for managing promotions (Free Shipping, Free Gift, etc.)

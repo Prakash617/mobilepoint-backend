@@ -40,5 +40,5 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
     @property
-    def username(self):
+    def username(self) -> str:
         return self.email

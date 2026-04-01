@@ -43,7 +43,7 @@ class AdvertisementSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['current_impressions', 'click_count']
     
-    def get_ctr(self, obj):
+    def get_ctr(self, obj) -> float:
         """Calculate click-through rate"""
         if obj.current_impressions > 0:
             return round((obj.click_count / obj.current_impressions) * 100, 2)
@@ -148,13 +148,13 @@ class CuratedItemSerializer(serializers.ModelSerializer):
             "position",
         )
 
-    def get_image(self, obj):
+    def get_image(self, obj) -> str | None:
         if obj.image:
             request = self.context.get("request")
             return request.build_absolute_uri(obj.image.url)
         return None
 
-    def get_linked_type(self, obj):
+    def get_linked_type(self, obj) -> str:
         if obj.product:
             return "product"
         if obj.category:

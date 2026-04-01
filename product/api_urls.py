@@ -23,7 +23,6 @@ router.register(r'promotions', PromotionViewSet, basename='promotion')
 app_name = 'product'
 
 urlpatterns = [
-    # API endpoints
-    path('', include(router.urls)),
+    # Router endpoints are exposed once via mobilepoint/urls.py -> /api/
     path('filter-categories/', get_categories_by_brand, name='get_categories_by_brand'),
 ]

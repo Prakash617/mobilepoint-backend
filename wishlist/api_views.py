@@ -10,14 +10,23 @@ from .serializers import (
     WishlistSerializer, WishlistItemSerializer, 
     WishlistItemCreateSerializer
 )
+from drf_spectacular.utils import extend_schema
 
 
 
+@extend_schema(tags=["Wishlist"])
 class WishlistViewSet(viewsets.ModelViewSet):
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
     
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Wishlist.objects.none()
+
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Wishlist.objects.none()
+
         return Wishlist.objects.filter(user=self.request.user).prefetch_related(
             'items__product_variant__product'
         )
@@ -77,6 +86,7 @@ class WishlistViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+@extend_schema(tags=["Wishlist Items"])
 class WishlistItemViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
@@ -85,7 +95,14 @@ class WishlistItemViewSet(viewsets.ModelViewSet):
     ordering = ['-added_at']
     
     def get_queryset(self):
-        wishlist = Wishlist.objects.get_or_create(user=self.request.user)[0]
+        if getattr(self, 'swagger_fake_view', False):
+            return WishlistItem.objects.none()
+
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return WishlistItem.objects.none()
+
+        wishlist = Wishlist.objects.get_or_create(user=user)[0]
         return WishlistItem.objects.filter(wishlist=wishlist).select_related(
             'product_variant__product'
         )

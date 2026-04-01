@@ -233,11 +233,11 @@ class ProductVariant(models.Model):
         return f"{self.product.name} - {attributes}"
 
     @property
-    def is_in_stock(self):
+    def is_in_stock(self) -> bool:
         return self.stock_quantity > 0
 
     @property
-    def is_low_stock(self):
+    def is_low_stock(self) -> bool:
         return 0 < self.stock_quantity <= self.low_stock_threshold
     
     # def generate_sku(self):

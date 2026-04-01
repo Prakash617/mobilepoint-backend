@@ -38,7 +38,7 @@ class MenuItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
     
     @extend_schema_field(serializers.ListField(child=serializers.DictField()))
-    def get_children(self, obj):
+    def get_children(self, obj) -> list[dict]:
         """Get child menu items recursively"""
         if obj.children.exists():
             return MenuItemSerializer(
@@ -156,12 +156,12 @@ class MenuSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
     
-    def get_items(self, obj):
+    def get_items(self, obj) -> list[dict]:
         """Get only top-level menu items (parent=None) with their children"""
         top_level_items = obj.items.filter(parent=None, is_active=True)
         return MenuItemSerializer(top_level_items, many=True, context=self.context).data
     
-    def get_items_count(self, obj):
+    def get_items_count(self, obj) -> int:
         """Get total count of menu items"""
         return obj.items.count()
 
@@ -184,7 +184,7 @@ class MenuListSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
     
-    def get_items_count(self, obj):
+    def get_items_count(self, obj) -> int:
         return obj.items.count()
 
 

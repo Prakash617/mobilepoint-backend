@@ -5,6 +5,8 @@ from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter, OpenApiResponse
+from drf_spectacular.types import OpenApiTypes
 from .models import (
     Carousel, CarouselSlide, Advertisement,
     # Banner,
@@ -20,6 +22,18 @@ from .serializers import (
 )
 
 
+@extend_schema_view(
+    list=extend_schema(
+        summary="List active carousels",
+        description="Return active carousel groups. Optional filtering by position is supported.",
+        tags=["Website"],
+    ),
+    retrieve=extend_schema(
+        summary="Get carousel details",
+        description="Return a single active carousel with nested slides.",
+        tags=["Website"],
+    ),
+)
 class CarouselViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Carousel.objects.filter(is_active=True).prefetch_related('slides')
     serializer_class = CarouselSerializer
@@ -27,6 +41,21 @@ class CarouselViewSet(viewsets.ReadOnlyModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['position']
     
+    @extend_schema(
+        summary="Get carousels by position",
+        description="Return active carousels filtered by UI position.",
+        parameters=[
+            OpenApiParameter(
+                name="position",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Carousel position key (for example: home_main).",
+            )
+        ],
+        responses={200: CarouselSerializer(many=True)},
+        tags=["Website"],
+    )
     @action(detail=False, methods=['get'])
     def by_position(self, request):
         """Get carousels by position"""
@@ -41,6 +70,36 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
     serializer_class = AdvertisementSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['ad_type', 'position', 'is_active']
+
+    @extend_schema(tags=["Website"])
+    def list(self, request, *args, **kwargs):
+        """List advertisements (public: active and valid only; staff: all)."""
+        return super().list(request, *args, **kwargs)
+
+    @extend_schema(tags=["Website"])
+    def retrieve(self, request, *args, **kwargs):
+        """Get advertisement details."""
+        return super().retrieve(request, *args, **kwargs)
+
+    @extend_schema(tags=["Website"])
+    def create(self, request, *args, **kwargs):
+        """Create advertisement (admin only)."""
+        return super().create(request, *args, **kwargs)
+
+    @extend_schema(tags=["Website"])
+    def update(self, request, *args, **kwargs):
+        """Update advertisement (admin only)."""
+        return super().update(request, *args, **kwargs)
+
+    @extend_schema(tags=["Website"])
+    def partial_update(self, request, *args, **kwargs):
+        """Partially update advertisement (admin only)."""
+        return super().partial_update(request, *args, **kwargs)
+
+    @extend_schema(tags=["Website"])
+    def destroy(self, request, *args, **kwargs):
+        """Delete advertisement (admin only)."""
+        return super().destroy(request, *args, **kwargs)
     
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'track_impression', 'track_click']:
@@ -60,6 +119,29 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
             end_date__lt=now
         )
     
+    @extend_schema(
+        summary="Get advertisements by position",
+        description="Return active advertisements by position and device type.",
+        parameters=[
+            OpenApiParameter(
+                name="position",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="Advertisement position key.",
+            ),
+            OpenApiParameter(
+                name="device",
+                type=OpenApiTypes.STR,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                enum=["desktop", "mobile"],
+                description="Target device filter.",
+            ),
+        ],
+        responses={200: AdvertisementSerializer(many=True)},
+        tags=["Website"],
+    )
     @action(detail=False, methods=['get'])
     def by_position(self, request):
         """Get ads by position"""
@@ -86,6 +168,13 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(valid_ads, many=True)
         return Response(serializer.data)
     
+    @extend_schema(
+        summary="Track advertisement impression",
+        description="Increment impression counter for an advertisement.",
+        request=None,
+        responses={200: OpenApiResponse(description="Impression tracked")},
+        tags=["Website"],
+    )
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def track_impression(self, request, pk=None):
         """Track ad impression"""
@@ -95,6 +184,13 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
     
     
     # http://127.0.0.1:8000/api/advertisements/1/track_click/
+    @extend_schema(
+        summary="Track advertisement click",
+        description="Increment click counter for an advertisement.",
+        request=None,
+        responses={200: OpenApiResponse(description="Click tracked")},
+        tags=["Website"],
+    )
     @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def track_click(self, request, pk=None):
         """Track ad click"""
@@ -194,6 +290,7 @@ class AdvertisementViewSet(viewsets.ModelViewSet):
 #         return Response(result)
 
 
+@extend_schema(tags=["Website"])
 class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
     queryset = NewsletterSubscriber.objects.all()
     serializer_class = NewsletterSubscriberSerializer
@@ -203,6 +300,13 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAdminUser()]
     
+    @extend_schema(
+        summary="Subscribe to newsletter",
+        description="Create a newsletter subscriber record.",
+        request=NewsletterSubscriberSerializer,
+        responses={201: OpenApiResponse(description="Subscribed successfully")},
+        tags=["Website"],
+    )
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def subscribe(self, request):
         """Subscribe to newsletter"""
@@ -214,6 +318,13 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
     
+    @extend_schema(
+        summary="Unsubscribe from newsletter",
+        description="Deactivate subscriber by email.",
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiResponse(description="Unsubscribed successfully")},
+        tags=["Website"],
+    )
     @action(detail=False, methods=['post'], permission_classes=[AllowAny])
     def unsubscribe(self, request):
         """Unsubscribe from newsletter"""
@@ -238,6 +349,7 @@ class NewsletterSubscriberViewSet(viewsets.ModelViewSet):
             )
 
 
+@extend_schema(tags=["Website"])
 class ContactMessageViewSet(viewsets.ModelViewSet):
     queryset = ContactMessage.objects.all()
     serializer_class = ContactMessageSerializer
@@ -250,6 +362,13 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
             return [AllowAny()]
         return [IsAdminUser()]
     
+    @extend_schema(
+        summary="Mark contact message as read",
+        description="Set is_read=true for the selected message.",
+        request=None,
+        responses={200: OpenApiResponse(description="Marked as read")},
+        tags=["Website"],
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def mark_read(self, request, pk=None):
         """Mark message as read"""
@@ -258,6 +377,13 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
         message.save()
         return Response({'status': 'marked as read'})
     
+    @extend_schema(
+        summary="Reply to contact message",
+        description="Save admin reply for a contact message.",
+        request=OpenApiTypes.OBJECT,
+        responses={200: OpenApiResponse(description="Reply sent")},
+        tags=["Website"],
+    )
     @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
     def reply(self, request, pk=None):
         """Reply to contact message"""
@@ -281,6 +407,7 @@ class ContactMessageViewSet(viewsets.ModelViewSet):
         return Response({'status': 'reply sent'})
 
 
+@extend_schema(tags=["Website"])
 class SiteSettingsViewSet(viewsets.ModelViewSet):
     """
     API endpoint for site settings.
@@ -309,6 +436,12 @@ class SiteSettingsViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(settings)
         return Response(serializer.data)
     
+    @extend_schema(
+        summary="Get current site settings",
+        description="Return the singleton site settings object used by frontend configuration.",
+        responses={200: SiteSettingsSerializer},
+        tags=["Website"],
+    )
     @action(detail=False, methods=['get'], url_path='current', url_name='current-settings')
     def current(self, request):
         """
@@ -330,6 +463,19 @@ class SiteSettingsViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(settings)
         return Response(serializer.data)
 
+
+@extend_schema_view(
+    list=extend_schema(
+        summary="List curated homepage items",
+        description="Return active 'Curated For You' items ordered by position.",
+        tags=["Website"],
+    ),
+    retrieve=extend_schema(
+        summary="Get curated item",
+        description="Return one curated content item.",
+        tags=["Website"],
+    ),
+)
 class CuratedItemViewSet(viewsets.ReadOnlyModelViewSet):
     """
     Read-only ViewSet for 'Curated For You' homepage section

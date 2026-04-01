@@ -1,6 +1,5 @@
 # urls.py
 from mobilepoint.urls import router
-from django.urls import path, include
 
 from .api_views import (
     MenuViewSet,
@@ -18,7 +17,4 @@ router.register('pages', PageViewSet, basename='page')
 
 # app_name = 'menu'
 
-urlpatterns = [
-    # API endpoints
-    path('api/', include(router.urls)),
-]
+urlpatterns = []

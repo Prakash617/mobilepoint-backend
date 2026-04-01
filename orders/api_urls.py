@@ -1,5 +1,5 @@
 
-from django.urls import path, include
+from django.urls import path
 from mobilepoint.urls import router
 from .api_views import OrderViewSet, OrderItemViewSet, OrderStatusHistoryViewSet
 
@@ -12,6 +12,5 @@ router.register(r'order-history', OrderStatusHistoryViewSet, basename='orderhist
 app_name = 'orders'
 
 urlpatterns = [
-    # API endpoints
-    path('api/', include(router.urls)),
+    # Router endpoints are exposed once via mobilepoint/urls.py -> /api/
 ]

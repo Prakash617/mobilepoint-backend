@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from mobilepoint.urls import router
 from .api_views import (
     CarouselViewSet, AdvertisementViewSet, 
@@ -21,5 +21,5 @@ router.register(r"curated", CuratedItemViewSet, basename="curated")
 app_name = 'website'
 
 urlpatterns = [
-    path('api/', include(router.urls)),
+    # Router endpoints are exposed once via mobilepoint/urls.py -> /api/
 ]

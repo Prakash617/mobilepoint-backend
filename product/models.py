@@ -73,7 +73,6 @@ class Product(models.Model):
         on_delete=models.PROTECT,
         related_name='products',
         default=1  # ID of a valid brand
-
     )    
     # Base price (optional, can be overridden by variants)
     base_price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -354,6 +353,15 @@ class ProductImage(models.Model):
         # but the product is not explicitly set.
         if self.variant:
             self.product = self.variant.product
+
+        # Ensure there is always one primary image per product.
+        if self.product and not self.is_primary:
+            has_other_primary = ProductImage.objects.filter(
+                product=self.product,
+                is_primary=True
+            ).exclude(pk=self.pk).exists()
+            if not has_other_primary:
+                self.is_primary = True
 
         # Only one primary per product
         if self.is_primary and self.product:

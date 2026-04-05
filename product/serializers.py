@@ -245,6 +245,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     free_gift = serializers.SerializerMethodField()
     promotions = serializers.SerializerMethodField()  # <-- This is a method field
     deals = serializers.SerializerMethodField()
+    combos = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -253,7 +254,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'base_price', 'specifications', 'meta_title', 'meta_description',
             'is_active', 'is_featured', 'images', 'variants', 
             'available_attributes', 'created_at', 'updated_at','free_shipping', 'free_gift','promotions',
-            'deals'
+            'deals', 'combos'
         ]
     
     def get_available_attributes(self, obj) -> list[dict]:
@@ -318,6 +319,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             end_at__gte=now
         )
         return DealListSerializer(deals, many=True, context=self.context).data
+
+    def get_combos(self, obj) -> list[dict]:
+        """Get active combos where this product is the main product"""
+        combos = getattr(obj, "active_combos", None)
+        if combos is None:
+            combos = obj.combos.filter(is_active=True)
+        return ProductComboForProductDetailSerializer(combos, many=True, context=self.context).data
         
     def _get_promotion_info(self, obj, promotion_type: str) -> dict | None:
         from django.utils.timezone import now
@@ -472,6 +480,18 @@ class ProductComboDetailSerializer(serializers.ModelSerializer):
         model = ProductCombo
         fields = [
             'id', 'name', 'slug', 'main_product', 'description', 'combo_regular_price',
+            'combo_selling_price', 'is_active', 'is_featured', 'items',
+            'created_at', 'updated_at'
+        ]
+
+
+class ProductComboForProductDetailSerializer(serializers.ModelSerializer):
+    items = ProductComboItemSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ProductCombo
+        fields = [
+            'id', 'name', 'slug', 'description', 'combo_regular_price',
             'combo_selling_price', 'is_active', 'is_featured', 'items',
             'created_at', 'updated_at'
         ]

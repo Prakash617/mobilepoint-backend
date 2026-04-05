@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models.functions import Coalesce
-from django.db.models import Q, Min, Max, Sum, Avg, DecimalField, F
+from django.db.models import Q, Min, Max, Sum, Avg, DecimalField, F, Prefetch
 from .pagination import ProductPagination
 from django.utils import timezone
 from .models import (
@@ -35,6 +35,7 @@ from .serializers import (
     RecentlyViewedProductSerializer,
     ProductComboListSerializer,
     ProductComboDetailSerializer,
+    ProductComboForProductDetailSerializer,
     ProductComboCreateUpdateSerializer,
     PromotionListSerializer,
     PromotionDetailSerializer,
@@ -150,7 +151,20 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
         Product.objects.filter(is_active=True)
         .select_related("category", "brand")
-        .prefetch_related("images", "variants", "promotions")
+        .prefetch_related(
+            "images",
+            "variants",
+            "promotions",
+            Prefetch(
+                "combos",
+                queryset=ProductCombo.objects.filter(is_active=True).prefetch_related(
+                    "items__product__images",
+                    "items__product__variants",
+                    "items__product__promotions",
+                ),
+                to_attr="active_combos",
+            ),
+        )
     )
     lookup_field = "slug"
     filterset_class = ProductFilter

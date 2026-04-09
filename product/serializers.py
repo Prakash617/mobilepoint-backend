@@ -133,6 +133,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     brand = BrandSerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
     default_variant = serializers.SerializerMethodField()
+    variants = ProductVariantListSerializer(many=True, read_only=True)
     price_range = serializers.SerializerMethodField()
     free_shipping = serializers.SerializerMethodField()
     free_gift = serializers.SerializerMethodField()
@@ -145,7 +146,7 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug','short_description', 'description', 'category', 'brand',
             'base_price', 'is_active', 'is_featured', 
-            'primary_image', 'default_variant', 'price_range',
+            'primary_image', 'default_variant', 'variants', 'price_range',
             'free_shipping', 'free_gift', 'is_new', 'discount','available_attributes',
         ]
     

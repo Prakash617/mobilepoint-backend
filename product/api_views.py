@@ -154,6 +154,8 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
         .prefetch_related(
             "images",
             "variants",
+            "variants__variant_attributes__attribute",
+            "variants__images",
             "promotions",
             Prefetch(
                 "combos",

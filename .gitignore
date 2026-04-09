@@ -30,6 +30,10 @@ venv/
 env/
 ENV/
 
+public/
+tmp/
+passenger_wsgi.py
+
 # Django
 staticfiles/
 media/

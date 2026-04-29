@@ -123,8 +123,8 @@ class Product(models.Model):
         if self.brand and self.category:
             if not self.brand.category.filter(id=self.category_id).exists():
                 raise ValidationError(
-                    {"brand": "Selected brand does not belong to the selected category."}
-            )
+                    "Selected brand does not belong to the selected category."
+                )
 
 
     def save(self, *args, **kwargs):

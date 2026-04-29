@@ -251,7 +251,7 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
-    list_editable = ['is_active', 'is_featured', 'stock_quantity']
+    list_editable = ['is_active', 'is_featured']
     autocomplete_fields = []
     inlines = [ProductImageInline, ProductVariantInline]
     

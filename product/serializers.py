@@ -276,16 +276,6 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_is_low_stock(self, obj) -> bool:
         return 0 < obj.stock_quantity <= obj.low_stock_threshold
-
-    class Meta:
-        model = Product
-        fields = [
-            'id', 'name', 'slug','short_description', 'description', 'category', 'brand',
-            'base_price', 'specifications', 'meta_title', 'meta_description',
-            'is_active', 'is_featured', 'images', 'variants', 
-            'available_attributes', 'created_at', 'updated_at','free_shipping', 'free_gift','promotions',
-            'deals', 'combos'
-        ]
     
     def get_available_attributes(self, obj) -> list[dict]:
         """Get all unique attributes available for this product's variants"""

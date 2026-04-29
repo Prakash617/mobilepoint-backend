@@ -515,5 +515,8 @@ class OrderCreateSerializer(serializers.ModelSerializer):
                 notes='Order created',
                 created_by=user
             )
+
+            # Finalize stock and deal tracking
+            order.finalize()
             
             return order

@@ -240,6 +240,84 @@ class OrderService:
             deal.increment_purchases(item.quantity)
     
     @staticmethod
+    def finalize_order_stock(order):
+        """
+        Finalize stock reduction for all items in order
+        - Decrement product/variant stock
+        - Increment sold quantities
+        
+        Args:
+            order: Order instance
+        """
+        for item in order.items.filter(is_combo_parent=False):
+            # 1. Reduce Variant Stock if exists
+            if item.product_variant:
+                variant = item.product_variant
+                if variant.stock_quantity >= item.quantity:
+                    variant.stock_quantity -= item.quantity
+                    variant.sold_quantity += item.quantity
+                    variant.save(update_fields=['stock_quantity', 'sold_quantity'])
+                
+                # Also increment product sold quantity
+                product = variant.product
+                product.sold_quantity += item.quantity
+                product.save(update_fields=['sold_quantity'])
+            
+            # 2. Reduce Product Stock if no variant (or for all items)
+            elif item.product:
+                product = item.product
+                if product.stock_quantity >= item.quantity:
+                    product.stock_quantity -= item.quantity
+                product.sold_quantity += item.quantity
+                product.save(update_fields=['stock_quantity', 'sold_quantity'])
+
+            # 3. Handle Deal increments
+            if item.deal:
+                item.deal.increment_sold(item.quantity)
+                item.deal.increment_purchases(item.quantity)
+
+    @staticmethod
+    def restore_order_stock(order):
+        """
+        Restore stock for all items in order (e.g. when order is cancelled)
+        - Increment product/variant stock
+        - Decrement sold quantities
+        
+        Args:
+            order: Order instance
+        """
+        for item in order.items.filter(is_combo_parent=False):
+            # 1. Restore Variant Stock if exists
+            if item.product_variant:
+                variant = item.product_variant
+                variant.stock_quantity += item.quantity
+                if variant.sold_quantity >= item.quantity:
+                    variant.sold_quantity -= item.quantity
+                variant.save(update_fields=['stock_quantity', 'sold_quantity'])
+                
+                # Also decrement product sold quantity
+                product = variant.product
+                if product.sold_quantity >= item.quantity:
+                    product.sold_quantity -= item.quantity
+                product.save(update_fields=['sold_quantity'])
+            
+            # 2. Restore Product Stock if no variant (or for all items)
+            elif item.product:
+                product = item.product
+                product.stock_quantity += item.quantity
+                if product.sold_quantity >= item.quantity:
+                    product.sold_quantity -= item.quantity
+                product.save(update_fields=['stock_quantity', 'sold_quantity'])
+
+            # 3. Handle Deal increments rollback
+            if item.deal:
+                if item.deal.sold_quantity >= item.quantity:
+                    item.deal.sold_quantity -= item.quantity
+                if item.deal.purchases >= item.quantity:
+                    item.deal.purchases -= item.quantity
+                item.deal.save(update_fields=['sold_quantity', 'purchases'])
+
+    @staticmethod
     def finalize_order_combos(order):
         """
         Finalize combos after order is confirmed
@@ -248,20 +326,9 @@ class OrderService:
         Args:
             order: Order instance
         """
-        for item in order.items.filter(combo__isnull=False, is_combo_parent=False):
-            combo = item.combo
-            product = item.product
-            
-            # Reduce product variant stock if available
-            try:
-                # Try to find an active variant for the product
-                variant = product.variants.filter(is_active=True).first()
-                if variant and variant.stock_quantity >= item.quantity:
-                    variant.stock_quantity -= item.quantity
-                    variant.sold_quantity += item.quantity
-                    variant.save(update_fields=['stock_quantity', 'sold_quantity'])
-            except:
-                pass
+        # This is now largely handled by finalize_order_stock but keeping for compatibility
+        # if any combo-specific logic is needed later.
+        pass
     
     @staticmethod
     def can_use_deal(deal, quantity=1):

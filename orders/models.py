@@ -93,17 +93,9 @@ class Order(models.Model):
         super().save(*args, **kwargs)
     
     def finalize(self):
-        """Finalize order - increment deal sold quantities"""
-        from product.models import Deal
-        from django.utils import timezone
-        
-        for item in self.items.all():
-            if item.deal:
-                # Increment the deal's sold quantity
-                item.deal.increment_sold(item.quantity)
-                
-                # Increment deal purchase count (now in Deal model directly)
-                item.deal.increment_purchases(item.quantity)
+        """Finalize order - reduce stock and increment deal sold quantities"""
+        from orders.services import OrderService
+        OrderService.finalize_order_stock(self)
 
 
 class OrderItem(models.Model):

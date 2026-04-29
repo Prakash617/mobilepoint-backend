@@ -89,6 +89,11 @@ class Product(models.Model):
     # Status
     is_active = models.BooleanField(default=True)
     is_featured = models.BooleanField(default=False)
+
+    # Inventory
+    stock_quantity = models.PositiveIntegerField(default=0)
+    sold_quantity = models.PositiveIntegerField(default=0)
+    low_stock_threshold = models.PositiveIntegerField(default=5)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

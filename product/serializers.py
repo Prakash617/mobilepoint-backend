@@ -140,16 +140,26 @@ class ProductListSerializer(serializers.ModelSerializer):
     is_new = serializers.SerializerMethodField()
     discount = serializers.SerializerMethodField()
     available_attributes = serializers.SerializerMethodField()
+    is_in_stock = serializers.SerializerMethodField()
+    is_low_stock = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = [
             'id', 'name', 'slug','short_description', 'description', 'category', 'brand',
-            'base_price', 'is_active', 'is_featured', 
+            'base_price', 'stock_quantity', 'sold_quantity', 'low_stock_threshold',
+            'is_in_stock', 'is_low_stock',
+            'is_active', 'is_featured', 
             'primary_image', 'default_variant', 'variants', 'price_range',
             'free_shipping', 'free_gift', 'is_new', 'discount','available_attributes',
         ]
     
+    def get_is_in_stock(self, obj) -> bool:
+        return obj.stock_quantity > 0
+
+    def get_is_low_stock(self, obj) -> bool:
+        return 0 < obj.stock_quantity <= obj.low_stock_threshold
+
     def get_is_new(self, obj) -> bool:
         return obj.is_new
     
@@ -247,6 +257,25 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     promotions = serializers.SerializerMethodField()  # <-- This is a method field
     deals = serializers.SerializerMethodField()
     combos = serializers.SerializerMethodField()
+    is_in_stock = serializers.SerializerMethodField()
+    is_low_stock = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'name', 'slug', 'short_description', 'description', 'category', 'brand',
+            'base_price', 'stock_quantity', 'sold_quantity', 'low_stock_threshold',
+            'is_in_stock', 'is_low_stock',
+            'specifications', 'meta_title', 'meta_description', 'is_active', 'is_featured',
+            'images', 'variants', 'available_attributes', 'free_shipping', 'free_gift',
+            'promotions', 'deals', 'combos', 'created_at', 'updated_at'
+        ]
+
+    def get_is_in_stock(self, obj) -> bool:
+        return obj.stock_quantity > 0
+
+    def get_is_low_stock(self, obj) -> bool:
+        return 0 < obj.stock_quantity <= obj.low_stock_threshold
 
     class Meta:
         model = Product

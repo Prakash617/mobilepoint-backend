@@ -269,17 +269,27 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         Cannot cancel orders that have already been shipped or delivered.
         """
+        from orders.services import OrderService
         order = self.get_object()
         
-        if order.status in ['shipped', 'delivered']:
+        if order.order_status in ['shipped', 'delivered']:
             return Response(
                 {'error': 'Cannot cancel shipped or delivered orders'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        order.status = 'cancelled'
+        if order.order_status == 'cancelled':
+            return Response(
+                {'error': 'Order is already cancelled'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order.order_status = 'cancelled'
         order.save()
         
+        # Restore stock
+        OrderService.restore_order_stock(order)
+
         OrderStatusHistory.objects.create(
             order=order,
             status='cancelled',
@@ -331,12 +341,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         
         stats = {
             'total_orders': queryset.count(),
-            'pending': queryset.filter(status='pending').count(),
-            'confirmed': queryset.filter(status='confirmed').count(),
-            'processing': queryset.filter(status='processing').count(),
-            'shipped': queryset.filter(status='shipped').count(),
-            'delivered': queryset.filter(status='delivered').count(),
-            'cancelled': queryset.filter(status='cancelled').count(),
+            'pending': queryset.filter(order_status='pending').count(),
+            'confirmed': queryset.filter(order_status='confirmed').count(),
+            'processing': queryset.filter(order_status='processing').count(),
+            'shipped': queryset.filter(order_status='shipped').count(),
+            'delivered': queryset.filter(order_status='delivered').count(),
+            'cancelled': queryset.filter(order_status='cancelled').count(),
         }
         
         return Response(stats)

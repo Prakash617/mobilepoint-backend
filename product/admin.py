@@ -67,6 +67,16 @@ class VartientAttributeValueInlineForm(VariantAttributeValueForm):
         js = ("admin/js/variant_attribute_inline.js",)
 
 
+class BrandInline(admin.TabularInline):
+    model = Brand.category.through
+    extra = 1
+    verbose_name_plural = "Brands in this Category"
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related('brand')
+
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'parent', 'image_preview', 'is_active','is_featured', 'action_buttons']
@@ -75,6 +85,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ['is_active', 'created_at']
     search_fields = ['name']
     prepopulated_fields = {'slug': ('name',)}
+    inlines = [BrandInline]
     exclude = ['is_active','is_featured',] # this removes it from the form
 
     def image_preview(self, obj):
@@ -233,20 +244,23 @@ from django.urls import reverse
 
 @admin.register(Product)
 class ProductAdmin(nested_admin.NestedModelAdmin):
-    list_display = ['name', 'brand', 'category', 'base_price', 'is_active', 
+    list_display = ['name', 'brand', 'category', 'base_price', 'stock_quantity', 'sold_quantity', 'is_active', 
                     'is_featured', 
                     'get_attributes', 
                     'action_buttons']
     list_filter = ['is_active', 'is_featured', 'category', 'brand', 'created_at']
     search_fields = ['name', 'short_description', 'description', 'slug']
     prepopulated_fields = {'slug': ('name',)}
-    list_editable = ['is_active', 'is_featured']
+    list_editable = ['is_active', 'is_featured', 'stock_quantity']
     autocomplete_fields = []
     inlines = [ProductImageInline, ProductVariantInline]
     
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'slug','short_description', 'description',  'category','brand','base_price')
+        }),
+        ('Inventory', {
+            'fields': ('stock_quantity', 'sold_quantity', 'low_stock_threshold')
         }),
         ('Specifications', {
             'fields': ('specifications',),
@@ -257,6 +271,8 @@ class ProductAdmin(nested_admin.NestedModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    
+    readonly_fields = ('sold_quantity',)
     
     class Media:
         js = ("admin/js/product_admin.js",)
